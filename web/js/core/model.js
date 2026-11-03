@@ -62,6 +62,20 @@ export function rotXZ(x, z, sx, sz, rot) {
 }
 export function rotatedSize(model, rot) { return rot & 1 ? [model.sz, model.sx] : [model.sx, model.sz]; }
 
+// повёрнутая копия модели (так же, как её кладёт генератор)
+export function rotateModel(model, rot) {
+  if (!(rot & 3)) return model;
+  const [w, d] = rotatedSize(model, rot);
+  const out = new VoxelModel(w, model.sy, d);
+  for (let y = 0; y < model.sy; y++)
+    for (let z = 0; z < model.sz; z++)
+      for (let x = 0; x < model.sx; x++) {
+        const [a, b] = rotXZ(x, z, model.sx, model.sz, rot);
+        out.data[a + w * (b + d * y)] = model.data[model.idx(x, y, z)];
+      }
+  return out;
+}
+
 // обратное: мировое смещение внутри повёрнутого ящика -> локальные (x, z)
 export function unrotXZ(wx, wz, sx, sz, rot) {
   switch (rot & 3) {

@@ -1,5 +1,5 @@
 // Мир - решётка чанков 32³. Пустой чанк не хранится. Ниже нуля - коренная порода (тела не
-// проваливаются), за краями по сторонам и сверху - воздух.
+// проваливаются), за краями по сторонам и сверху - воздух (там и ниже нуля пусто: улетевшее падает).
 import { M } from './materials.js';
 
 export const CS = 32;
@@ -30,8 +30,8 @@ export class World {
   inside(x, y, z) { return x >= 0 && y >= 0 && z >= 0 && x < this.nx && y < this.ny && z < this.nz; }
 
   get(x, y, z) {
-    if (y < 0) return M.BEDROCK;
     if (x < 0 || z < 0 || x >= this.nx || y >= this.ny || z >= this.nz) return 0;
+    if (y < 0) return M.BEDROCK;
     const c = this.chunks[(x >> 5) + this.sx * ((z >> 5) + this.sz * (y >> 5))];
     return c ? c.data[lidx(x & 31, y & 31, z & 31)] : 0;
   }
