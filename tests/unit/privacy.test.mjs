@@ -12,7 +12,7 @@ const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '..')
 const PATTERNS = [
   new RegExp('192\\.' + '168\\.\\d+\\.\\d+'),
   new RegExp('C:[\\\\/]+(Dri' + 've|Us' + 'ers)', 'i'),
-  new RegExp('@' + 'gmail\\.com', 'i'),
+  new RegExp('@' + 'gm' + 'ail\\.com', 'i'),
   new RegExp('k' + 'o-' + 'fi\\.com', 'i'),
   new RegExp('https?://[^\\s)]*' + 'git' + 'ea', 'i'),
 ];
