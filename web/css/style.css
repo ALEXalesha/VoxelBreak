@@ -1,0 +1,108 @@
+/* VoxelBreak. Темы меню - наборы переменных на <html data-theme>; HUD над миром тёмный в любой
+   теме (мир под ним бывает и светлым небом, и тёмным подвалом). */
+:root {
+  --app-base: #12101f;
+  --panel: rgba(28, 22, 50, 0.86);
+  --panel-border: rgba(255, 255, 255, 0.18);
+  --text: #f4f4f8;
+  --dim: rgba(244, 244, 248, 0.62);
+  --accent: #4766d6;
+  --accent-text: #ffffff;
+  --btn: rgba(255, 255, 255, 0.08);
+  --btn-hover: rgba(255, 255, 255, 0.16);
+  --btn-border: rgba(255, 255, 255, 0.2);
+  --shadow: 0 18px 50px rgba(0, 0, 0, 0.45);
+  --blur: blur(18px) saturate(140%);
+  --screen-bg: radial-gradient(900px 600px at 15% 0%, rgba(120, 90, 255, 0.35), transparent 60%),
+    radial-gradient(800px 600px at 90% 100%, rgba(60, 200, 255, 0.25), transparent 60%), rgba(8, 8, 20, 0.35);
+  --hud-bg: rgba(10, 12, 20, 0.62);
+  --hud-text: #f2f4f8;
+  --radius: 14px;
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+:root[data-theme="formal"] {
+  --app-base: #1f242e; --panel: rgba(31, 36, 46, 0.94); --panel-border: rgba(255, 255, 255, 0.12);
+  --text: #e6e8ec; --dim: rgba(230, 232, 236, 0.6); --accent: #3f6aa6; --accent-text: #ffffff;
+  --btn: rgba(255, 255, 255, 0.05); --btn-hover: rgba(255, 255, 255, 0.11); --btn-border: rgba(255, 255, 255, 0.14);
+  --blur: none; --screen-bg: rgba(20, 24, 31, 0.55); --radius: 6px;
+}
+:root[data-theme="light"] {
+  --app-base: #e8ecf3; --panel: rgba(244, 246, 250, 0.95); --panel-border: rgba(22, 26, 38, 0.14);
+  --text: #1b2030; --dim: rgba(27, 32, 48, 0.74); --accent: #3a6fd8; --accent-text: #ffffff;
+  --btn: rgba(22, 26, 38, 0.05); --btn-hover: rgba(22, 26, 38, 0.1); --btn-border: rgba(22, 26, 38, 0.18);
+  --shadow: 0 14px 40px rgba(30, 40, 70, 0.2); --screen-bg: rgba(232, 236, 243, 0.35);
+}
+:root[data-theme="night"] {
+  --app-base: #08090e; --panel: rgba(12, 13, 19, 0.95); --panel-border: rgba(255, 255, 255, 0.09);
+  --text: #dcdde3; --dim: rgba(220, 221, 227, 0.55); --accent: #4668a8; --accent-text: #ffffff;
+  --btn: rgba(255, 255, 255, 0.04); --btn-hover: rgba(255, 255, 255, 0.09); --btn-border: rgba(255, 255, 255, 0.1);
+  --screen-bg: rgba(0, 0, 0, 0.6);
+}
+:root[data-theme="warm"] {
+  --app-base: #1d1610; --panel: rgba(36, 26, 16, 0.92); --panel-border: rgba(255, 226, 190, 0.18);
+  --text: #f5ead9; --dim: rgba(245, 234, 217, 0.62); --accent: #96561f; --accent-text: #ffffff;
+  --btn: rgba(255, 236, 210, 0.07); --btn-hover: rgba(255, 236, 210, 0.14); --btn-border: rgba(255, 226, 190, 0.2);
+  --screen-bg: radial-gradient(900px 600px at 10% -8%, rgba(190, 110, 40, 0.3), transparent 60%), rgba(20, 14, 8, 0.45);
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; overflow: hidden; background: var(--app-base); color: var(--text); }
+#view { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+
+.screen { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; padding: 16px; background: var(--screen-bg); z-index: 10; overflow-y: auto; }
+.screen[hidden], [hidden] { display: none !important; }
+.panel { width: min(420px, 100%); background: var(--panel); border: 1px solid var(--panel-border); border-radius: var(--radius);
+  box-shadow: var(--shadow); backdrop-filter: var(--blur); -webkit-backdrop-filter: var(--blur); padding: 24px 24px 20px; margin: auto; }
+.panel.wide { width: min(620px, 100%); }
+.panel h1, .panel h2 { margin: 0 0 6px; font-weight: 700; letter-spacing: 0.01em; }
+.panel p { line-height: 1.45; margin: 8px 0; }
+.logo { font-size: 42px; line-height: 1.1; }
+.logo b { color: var(--accent); filter: brightness(1.45) saturate(1.2); }
+.sub, .note { color: var(--dim); }
+.note { font-size: 13px; }
+.buttons { display: flex; flex-direction: column; gap: 8px; margin: 18px 0 8px; }
+.buttons.row { flex-direction: row; flex-wrap: wrap; justify-content: flex-end; }
+button { font: inherit; color: var(--text); background: var(--btn); border: 1px solid var(--btn-border); border-radius: calc(var(--radius) * 0.6);
+  padding: 10px 14px; cursor: pointer; transition: background 0.15s, border-color 0.15s; min-height: 40px; }
+button:hover, button:focus-visible { background: var(--btn-hover); outline: none; border-color: var(--accent); }
+button.primary, .seg button.on, .themes button.on, .tabs button.on { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+.field { display: flex; flex-direction: column; gap: 6px; margin: 14px 0; font-size: 14px; color: var(--dim); }
+.field.check { flex-direction: row; align-items: center; gap: 10px; color: var(--text); }
+.field input[type="text"] { font: inherit; padding: 9px 12px; border-radius: calc(var(--radius) * 0.6); border: 1px solid var(--btn-border); background: var(--btn); color: var(--text); }
+.field input[type="range"] { width: 100%; accent-color: var(--accent); }
+.seg, .themes, .tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+.seg button, .themes button, .tabs button { flex: 1 1 auto; min-width: 0; }
+.tabs { margin: 12px 0 4px; }
+.keys { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 12px; align-items: center; max-height: 46vh; overflow-y: auto; margin: 10px 0; padding-right: 4px; }
+.keys span { color: var(--text); font-size: 14px; overflow-wrap: anywhere; }
+.keys button { min-width: 96px; font-family: ui-monospace, monospace; }
+.keys button.wait { border-color: var(--accent); animation: pulse 0.9s infinite; }
+@keyframes pulse { 50% { opacity: 0.5; } }
+.bar { height: 8px; background: var(--btn); border-radius: 4px; overflow: hidden; margin-top: 14px; }
+.bar i { display: block; height: 100%; width: 0; background: var(--accent); transition: width 0.2s; }
+
+/* HUD: тёмные подложки при любой теме */
+#hud { position: fixed; inset: 0; pointer-events: none; z-index: 5; color: var(--hud-text); font-size: 14px; }
+#crosshair { position: absolute; left: 50%; top: 50%; width: 18px; height: 18px; transform: translate(-50%, -50%); }
+#crosshair::before, #crosshair::after { content: ''; position: absolute; background: #fff; box-shadow: 0 0 2px #000; }
+#crosshair::before { left: 8px; top: 0; width: 2px; height: 18px; }
+#crosshair::after { top: 8px; left: 0; width: 18px; height: 2px; }
+#hud-stats, #hud-hint, #hud-flags, #toast, #click-to-play { background: var(--hud-bg); color: var(--hud-text); border-radius: 8px; padding: 6px 10px; }
+#hud-stats { position: absolute; top: 12px; left: 12px; font-variant-numeric: tabular-nums; }
+#hud-flags { position: absolute; top: 12px; right: 12px; }
+#hud-flags:empty { display: none; }
+#hud-hint { position: absolute; bottom: 84px; left: 50%; transform: translateX(-50%); white-space: nowrap; max-width: calc(100vw - 24px); overflow: hidden; text-overflow: ellipsis; }
+#toolbar { position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%); display: flex; gap: 6px; max-width: calc(100vw - 16px); }
+#toolbar div { background: var(--hud-bg); border: 2px solid transparent; border-radius: 8px; padding: 6px 8px; min-width: 0; text-align: center; font-size: 12px; line-height: 1.2; }
+#toolbar div b { display: block; font-size: 11px; opacity: 0.7; }
+#toolbar div.on { border-color: #ffd36a; }
+#toolbar div i { font-style: normal; opacity: 0.8; }
+#toast { position: fixed; top: 64px; left: 50%; transform: translateX(-50%); z-index: 20; }
+#click-to-play { position: fixed; left: 50%; top: 60%; transform: translateX(-50%); z-index: 6; pointer-events: none; }
+
+@media (max-width: 640px) {
+  .logo { font-size: 34px; }
+  #toolbar div { padding: 4px 5px; font-size: 10px; }
+  #toolbar div span { display: none; }
+  .panel { padding: 18px 16px 14px; }
+}

@@ -6,7 +6,6 @@ import { MATERIALS, M } from './materials.js';
 
 const AO_LIGHT = [0.42, 0.62, 0.8, 1];
 const GLASS = M.GLASS;
-const opaque = (m) => m !== 0 && m !== GLASS && m !== 255;
 
 class Buf {
   constructor() { this.pos = []; this.nrm = []; this.col = []; this.vary = []; this.idx = []; this.quads = 0; }
@@ -20,54 +19,51 @@ class Buf {
 }
 
 // dims - размер без каймы [sx, sy, sz]
+const OPAQUE = new Uint8Array(256).map((_, m) => (m !== 0 && m !== GLASS && m !== 255 ? 1 : 0));
+
 export function greedyMesh(grid, dims) {
   const [sx, sy, sz] = dims;
   const px = sx + 2, pz = sz + 2;
-  const at = (x, y, z) => grid[(x + 1) + px * ((z + 1) + pz * (y + 1))];
   const out = { opaque: new Buf(), glass: new Buf() };
   const n = [sx, sy, sz];
-  const p = [0, 0, 0], q = [0, 0, 0];
-  const get3 = (c) => at(c[0], c[1], c[2]);
+  const st = [1, px * pz, px];                 // шаг индекса по x, y, z
+  const origin = 1 + px + px * pz;
 
   for (let d = 0; d < 3; d++) {
     const u = (d + 1) % 3, v = (d + 2) % 3;
     const nu = n[u], nv = n[v];
+    const sd = st[d], su = st[u], sv = st[v];
     const mask = new Int32Array(nu * nv);
     for (let dir = -1; dir <= 1; dir += 2) {
+      const front = dir * sd;
       for (let s = 0; s < n[d]; s++) {
         // маска слоя: ключ = материал | затенение 4 углов << 8 | стекло << 16; 0 - грани нет
         let any = false;
-        for (let j = 0; j < nv; j++)
-          for (let i = 0; i < nu; i++) {
-            p[d] = s; p[u] = i; p[v] = j;
-            const a = get3(p);
+        for (let j = 0; j < nv; j++) {
+          let ai = origin + s * sd + j * sv;
+          for (let i = 0; i < nu; i++, ai += su) {
+            const a = grid[ai];
             let key = 0;
             if (a !== 0 && a !== 255) {
-              q[d] = s + dir; q[u] = i; q[v] = j;
-              const b = get3(q);
-              const isGlass = a === GLASS;
-              const show = isGlass ? b === 0 || b === 255 : !opaque(b);
-              if (show) {
-                key = a | (isGlass ? 1 << 16 : 0);
-                if (!isGlass) {
-                  // затенение: три соседа перед гранью у каждого угла
-                  let ao = 0;
-                  for (let k = 0; k < 4; k++) {
-                    const du = k === 1 || k === 2 ? 1 : -1, dv = k >= 2 ? 1 : -1;
-                    q[d] = s + dir;
-                    q[u] = i + du; q[v] = j; const s1 = opaque(get3(q)) ? 1 : 0;
-                    q[u] = i; q[v] = j + dv; const s2 = opaque(get3(q)) ? 1 : 0;
-                    q[u] = i + du; q[v] = j + dv; const c = opaque(get3(q)) ? 1 : 0;
-                    const lv = s1 && s2 ? 0 : 3 - (s1 + s2 + c);
-                    ao |= lv << (k * 2);
-                  }
-                  key |= ao << 8;
-                } else key |= 0xff << 8;
-                any = true;
+              const b = grid[ai + front];
+              if (a === GLASS) {
+                if (b === 0 || b === 255) key = a | (1 << 16) | (0xff << 8);
+              } else if (!OPAQUE[b]) {
+                // затенение: три соседа перед гранью у каждого угла
+                const f = ai + front;
+                const um = OPAQUE[grid[f - su]], up = OPAQUE[grid[f + su]], vm = OPAQUE[grid[f - sv]], vp = OPAQUE[grid[f + sv]];
+                const c0 = OPAQUE[grid[f - su - sv]], c1 = OPAQUE[grid[f + su - sv]], c2 = OPAQUE[grid[f + su + sv]], c3 = OPAQUE[grid[f - su + sv]];
+                const l0 = um && vm ? 0 : 3 - (um + vm + c0);
+                const l1 = up && vm ? 0 : 3 - (up + vm + c1);
+                const l2 = up && vp ? 0 : 3 - (up + vp + c2);
+                const l3 = um && vp ? 0 : 3 - (um + vp + c3);
+                key = a | ((l0 | (l1 << 2) | (l2 << 4) | (l3 << 6)) << 8);
               }
+              if (key) any = true;
             }
             mask[i + j * nu] = key;
           }
+        }
         if (!any) continue;
         // слияние прямоугольников
         for (let j = 0; j < nv; j++)
@@ -81,7 +77,7 @@ export function greedyMesh(grid, dims) {
               for (let k = 0; k < w; k++) if (mask[i + k + (j + h) * nu] !== key) break grow;
               h++;
             }
-            for (let jj = 0; jj < h; jj++) for (let ii = 0; ii < w; ii++) mask[i + ii + (j + jj) * nu] = 0;
+            for (let jj = 0; jj < h; jj++) mask.fill(0, i + (j + jj) * nu, i + w + (j + jj) * nu);
             emit(key & 0x10000 ? out.glass : out.opaque, d, u, v, dir, s, i, j, w, h, key);
             i += w;
           }

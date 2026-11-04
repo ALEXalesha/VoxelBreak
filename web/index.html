@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="ru" data-theme="glass">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="VoxelBreak - a voxel destruction sandbox in the browser">
+  <title>VoxelBreak</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <canvas id="view" aria-label="VoxelBreak"></canvas>
+
+  <div id="hud" hidden>
+    <div id="crosshair"></div>
+    <div id="hud-stats"><span id="s-destroyed"></span> · <span id="s-bodies"></span> · <span id="s-fps"></span></div>
+    <div id="hud-hint"></div>
+    <div id="hud-flags"></div>
+    <div id="toolbar"></div>
+  </div>
+  <div id="toast" hidden></div>
+  <div id="click-to-play" hidden><span data-i18n="clickToPlay"></span></div>
+
+  <section id="screen-menu" class="screen" hidden>
+    <div class="panel">
+      <h1 class="logo">Voxel<b>Break</b></h1>
+      <p class="sub" data-i18n="subtitle"></p>
+      <div class="buttons">
+        <button id="m-new" class="primary" data-i18n="play"></button>
+        <button id="m-continue" data-i18n="continue"></button>
+        <button id="m-settings" data-i18n="settings"></button>
+        <button id="m-about" data-i18n="about"></button>
+        <button id="m-quit" data-i18n="quit" hidden></button>
+      </div>
+      <p class="note" data-i18n="fan"></p>
+    </div>
+  </section>
+
+  <section id="screen-new" class="screen" hidden>
+    <div class="panel">
+      <h2 data-i18n="newWorld"></h2>
+      <label class="field"><span data-i18n="worldKind"></span>
+        <div class="seg" id="n-kind">
+          <button data-v="town" data-i18n="kind_town"></button><button data-v="nature" data-i18n="kind_nature"></button><button data-v="mixed" data-i18n="kind_mixed"></button>
+        </div>
+      </label>
+      <label class="field"><span data-i18n="worldSize"></span>
+        <div class="seg" id="n-size">
+          <button data-v="small" data-i18n="size_small"></button><button data-v="normal" data-i18n="size_normal"></button><button data-v="large" data-i18n="size_large"></button>
+        </div>
+      </label>
+      <label class="field"><span data-i18n="seed"></span>
+        <input id="n-seed" type="text" maxlength="24" autocomplete="off" data-i18n-placeholder="seedHint">
+      </label>
+      <div class="buttons row">
+        <button id="n-create" class="primary" data-i18n="create"></button>
+        <button class="back" data-i18n="back"></button>
+      </div>
+    </div>
+  </section>
+
+  <section id="screen-pause" class="screen" hidden>
+    <div class="panel">
+      <h2 data-i18n="paused"></h2>
+      <div class="buttons">
+        <button id="p-resume" class="primary" data-i18n="resume"></button>
+        <button id="p-save" data-i18n="save"></button>
+        <button id="p-load" data-i18n="load"></button>
+        <button id="p-settings" data-i18n="settings"></button>
+        <button id="p-menu" data-i18n="toMenu"></button>
+      </div>
+    </div>
+  </section>
+
+  <section id="screen-settings" class="screen" hidden>
+    <div class="panel wide">
+      <h2 data-i18n="settings"></h2>
+      <div class="tabs" id="s-tabs">
+        <button data-tab="general" data-i18n="tab_general"></button><button data-tab="graphics" data-i18n="tab_graphics"></button><button data-tab="keys" data-i18n="tab_keys"></button>
+      </div>
+      <div class="tab" data-tab="general">
+        <label class="field"><span data-i18n="language"></span>
+          <div class="seg" id="s-lang"><button data-v="ru">Русский</button><button data-v="en">English</button></div>
+        </label>
+        <div class="field"><span data-i18n="theme"></span>
+          <div class="themes" id="s-theme">
+            <button data-v="glass" data-i18n="theme_glass"></button><button data-v="formal" data-i18n="theme_formal"></button><button data-v="light" data-i18n="theme_light"></button><button data-v="night" data-i18n="theme_night"></button><button data-v="warm" data-i18n="theme_warm"></button>
+          </div>
+        </div>
+        <label class="field"><span data-i18n="sens"></span><input id="s-sens" type="range" min="0.1" max="4" step="0.05"></label>
+        <label class="field check"><input id="s-invert" type="checkbox"><span data-i18n="invertY"></span></label>
+        <label class="field"><span data-i18n="volume"></span><input id="s-volume" type="range" min="0" max="1" step="0.05"></label>
+      </div>
+      <div class="tab" data-tab="graphics" hidden>
+        <label class="field"><span data-i18n="shadows"></span>
+          <div class="seg" id="s-shadows"><button data-v="on" data-i18n="on"></button><button data-v="off" data-i18n="off"></button></div>
+        </label>
+        <label class="field"><span data-i18n="distance"></span>
+          <div class="seg" id="s-distance"><button data-v="low" data-i18n="dist_low"></button><button data-v="mid" data-i18n="dist_mid"></button><button data-v="high" data-i18n="dist_high"></button></div>
+        </label>
+        <label class="field"><span data-i18n="fov"></span><input id="s-fov" type="range" min="50" max="110" step="1"></label>
+      </div>
+      <div class="tab" data-tab="keys" hidden>
+        <div class="keys" id="s-keys"></div>
+        <button id="s-reset-keys" data-i18n="resetKeys"></button>
+      </div>
+      <div class="buttons row"><button class="back primary" data-i18n="done"></button></div>
+    </div>
+  </section>
+
+  <section id="screen-about" class="screen" hidden>
+    <div class="panel">
+      <h2 data-i18n="about"></h2>
+      <p data-i18n="aboutText"></p>
+      <p data-i18n="authorship"></p>
+      <p class="note" data-i18n="controls"></p>
+      <div class="buttons row"><button class="back primary" data-i18n="back"></button></div>
+    </div>
+  </section>
+
+  <section id="screen-loading" class="screen" hidden>
+    <div class="panel"><h2 data-i18n="building"></h2><div class="bar"><i id="load-bar"></i></div></div>
+  </section>
+
+  <script type="module" src="js/app/main.js"></script>
+</body>
+</html>

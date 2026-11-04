@@ -17,5 +17,17 @@ export const MANIFEST = {
     car: { src: 'proc:car' },
     barrel: { src: 'proc:barrel' },
     crate: { src: 'proc:crate' },
+    bulldozer: { src: 'proc:bulldozer' },
+    crane: { src: 'proc:crane' },
+    boom: { src: 'proc:boom' },
+    ball: { src: 'proc:ball' },
+    // предметы в руках: воксель 3 см
+    'item.hammer': { src: 'proc:item.hammer', scale: 0.12 },
+    'item.hands': { src: 'proc:item.hands', scale: 0.12 },
+    'item.dynamite': { src: 'proc:item.dynamite', scale: 0.12 },
+    'item.shotgun': { src: 'proc:item.shotgun', scale: 0.12 },
+    'item.rocket': { src: 'proc:item.rocket', scale: 0.12 },
+    'item.laser': { src: 'proc:item.laser', scale: 0.12 },
+    'item.vehicle': { src: 'proc:item.vehicle', scale: 0.12 },
   },
 };
