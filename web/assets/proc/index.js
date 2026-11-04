@@ -4,7 +4,8 @@ import { tree, rock } from './nature.js';
 import { car, barrel, crate } from './props.js';
 import { bulldozer, crane, boom, ball } from './vehicles.js';
 import * as items from './items.js';
+import { character } from './character.js';
 
 export const BUILDERS = { house, bridge, fence, pole, tree, rock, car, barrel, crate, bulldozer, crane, boom, ball,
   'item.hammer': items.hammer, 'item.hands': items.hands, 'item.dynamite': items.dynamite, 'item.shotgun': items.shotgun,
-  'item.rocket': items.rocket, 'item.laser': items.laser, 'item.vehicle': items.remote };
+  'item.rocket': items.rocket, 'item.laser': items.laser, 'item.vehicle': items.remote, character };

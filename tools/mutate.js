@@ -57,7 +57,9 @@ const MUTANTS = [
   { id: 'missing-translation', file: 'web/js/game/i18n.js', from: "    empty: 'Out of ammo',\n", to: '', unit: ['settings', 'переводы'] },
   // ---------- страница ----------
   { id: 'theme-low-contrast', file: 'web/css/style.css', from: '--accent: #4766d6;', to: '--accent: #8aa4f4;', web: 'тема «glass»' },
-  { id: 'panel-too-wide', file: 'web/css/style.css', from: '.panel { width: min(420px, 100%);', to: '.panel { width: 420px;', web: 'узкое окно' },
+  // равнозначная поломка «.panel { width: 420px }» не годится: панель - элемент flex и сама сжимается
+  { id: 'keys-grid-too-wide', file: 'web/css/style.css', from: '.keys { display: grid; grid-template-columns: minmax(0, 1fr) auto;', to: '.keys { display: grid; grid-template-columns: 230px 160px;', web: 'узкое окно' },
+  { id: 'toolbar-names-on-narrow', file: 'web/css/style.css', from: '  #toolbar div span { display: none; }\n', to: '', web: 'узкое окно' },
   { id: 'escape-does-nothing', file: 'web/js/app/main.js', from: "  if (e.code === 'Escape') {", to: "  if (e.code === 'Escape' && false) {", web: 'пауза' },
   { id: 'no-pointer-lock', file: 'web/js/app/main.js', from: '  if (!locked) { requestLock(); return; }', to: '  if (!locked) { return; }', web: 'захват мыши только заглушкой' },
   { id: 'save-not-stored', file: 'web/js/app/main.js', from: 'try { ok = store.set(SAVE, JSON.stringify(sim.toSave())); }', to: 'try { ok = true; }', web: 'сохранение в окне' },

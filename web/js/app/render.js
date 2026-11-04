@@ -5,6 +5,7 @@ import { padGrid, greedyMesh } from '../core/mesher.js';
 import { MATERIALS, VOXEL } from '../core/materials.js';
 import { eyeY } from '../game/player.js';
 import { craneTip, forwardOf } from '../game/vehicles.js';
+import { pose } from '../game/character.js';
 import { CS } from '../core/world.js';
 
 THREE.ColorManagement.enabled = false;
@@ -379,6 +380,42 @@ export class Renderer {
     this.flash.intensity *= Math.pow(0.02, dt);
   }
 
+  // персонаж: кости THREE.Bone по скелету модели, на каждой - своя воксельная часть
+  buildCharacter() {
+    const rig = this.assets.get('character');
+    const root = new THREE.Group();
+    const bones = {};
+    for (const b of rig.bones) {
+      const bone = new THREE.Bone();
+      bone.name = b.name;
+      const parent = b.parent ? rig.bones.find((x) => x.name === b.parent) : null;
+      bone.position.set(b.pivot[0] - (parent ? parent.pivot[0] : 0), b.pivot[1] - (parent ? parent.pivot[1] : 0), b.pivot[2] - (parent ? parent.pivot[2] : 0));
+      (b.parent ? bones[b.parent] : root).add(bone);
+      bones[b.name] = bone;
+    }
+    for (const part of rig.parts) {
+      const mesh = modelMesh(part.model, this.mats, 1);
+      const pv = rig.bones.find((x) => x.name === part.bone).pivot;
+      mesh.position.set(part.at[0] - pv[0], part.at[1] - pv[1], part.at[2] - pv[2]);
+      bones[part.bone].add(mesh);
+    }
+    root.scale.setScalar(rig.voxel);
+    root.traverse((o) => { if (o.isMesh) o.castShadow = true; });
+    this.scene.add(root);
+    this.character = { root, bones, state: {} };
+  }
+
+  syncCharacter(sim, dt) {
+    if (!this.character) this.buildCharacter();
+    const c = this.character, p = sim.player;
+    c.root.visible = this.thirdPerson && !sim.driving && !this.orbit;
+    if (!c.root.visible) return;
+    c.root.position.set(p.x, p.y, p.z);
+    c.root.rotation.set(0, p.yaw + Math.PI, 0);
+    const angles = pose(c.state, p, dt);
+    for (const [name, [x, y, z]] of Object.entries(angles)) if (c.bones[name]) c.bones[name].rotation.set(x, y, z);
+  }
+
   setTool(id) {
     if (this.vmTool === id) return;
     if (this.viewmodel) this.vmScene.remove(this.viewmodel);
@@ -396,6 +433,7 @@ export class Renderer {
     this.syncBodies(sim);
     this.syncVehicles(sim);
     this.syncEntities(sim);
+    this.syncCharacter(sim, dt);
     this.effects(events);
     this.updateEffects(dt);
 

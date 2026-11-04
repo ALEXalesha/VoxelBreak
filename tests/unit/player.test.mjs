@@ -102,3 +102,28 @@ test('обломки: на них стоят, в них упираются и т
   assert.ok(pushes.length > 0 && pushes[0].body === crate, 'толкает ящик');
   assert.ok(q.x < 41, 'не прошёл сквозь');
 });
+
+test('персонаж: скелет цел, части на своих костях, рост как у игрока; шаг - руки и ноги в противофазе', async () => {
+  const { assets } = await import('./helpers.mjs');
+  const { checkRig, pose } = await import('../../web/js/game/character.js');
+  const rig = assets.get('character');
+  assert.equal(checkRig(rig), null);
+  assert.ok(Math.abs(rig.height * rig.voxel - P.HEIGHT) < 0.5, 'рост как у игрока');
+  assert.match(checkRig({ bones: [{ name: 'a', parent: 'b' }], parts: [] }), /нет родителя/);
+  assert.match(checkRig({ bones: [{ name: 'a', parent: null }, { name: 'a', parent: null }], parts: [] }), /повторяется/);
+  assert.match(checkRig({ bones: [{ name: 'a', parent: null }], parts: [{ bone: 'z' }] }), /несуществующей/);
+  const st = {};
+  const walk = { vx: 18, vz: 0, onGround: true, pitch: 0.3 };
+  let maxSwing = 0;
+  for (let i = 0; i < 60; i++) {
+    const a = pose(st, walk, 1 / 60);
+    assert.ok(Math.abs(a['leg.L'][0] + a['leg.R'][0]) < 1e-9, 'ноги в противофазе');
+    assert.ok(Math.abs(a['arm.L'][0] + a['leg.L'][0]) < 1e-9, 'рука идёт с другой ногой');
+    maxSwing = Math.max(maxSwing, Math.abs(a['leg.L'][0]));
+  }
+  assert.ok(maxSwing > 0.5);
+  const still = pose({}, { vx: 0, vz: 0, onGround: true }, 1 / 60);
+  assert.equal(still['leg.L'][0], 0, 'стоя ноги прямо');
+  const jump = pose({}, { vx: 0, vz: 0, onGround: false, crouch: true }, 1 / 60);
+  assert.ok(jump['arm.L'][2] < 0 && jump.spine[0] > 0);
+});

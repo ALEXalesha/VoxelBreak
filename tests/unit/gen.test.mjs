@@ -102,6 +102,7 @@ test('природа: овраг с мостом, деревья и скалы',
 test('модели кодом: связны, стоят на низу, повороты обратимы', () => {
   const rng = new Rng(1);
   for (const id of Object.keys(MANIFEST.models)) {
+    if (assets.get(id, {}, rng).rig) continue;
     const m = assets.get(id, {}, rng);
     assert.ok(m instanceof VoxelModel, id);
     assert.ok(m.count() > 0, id);

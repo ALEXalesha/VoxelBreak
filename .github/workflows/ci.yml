@@ -1,0 +1,65 @@
+# Проверки на GitHub: законы ядра с покрытием и мутантами, страница в Chromium без окна,
+# программа на Electron (невидимое окно под Xvfb). Порог кадра на медленной машине CI шире
+# (VB_PERF_SCALE).
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  core:
+    name: Laws, coverage, mutants (node)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      ELECTRON_SKIP_BINARY_DOWNLOAD: "1"
+      VB_PERF_SCALE: "1.5"
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "24"
+      - run: npm ci --no-audit --no-fund
+      - name: Laws with branch coverage (core >= 90 %, no-window code >= 80 %)
+        run: npm run cover
+      - name: Every mutant is in place
+        run: node tools/mutate.js --check
+      - name: Mutants of node laws are killed
+        run: node tools/mutate.js --node
+
+  page:
+    name: Page in headless Chromium (WebGL via SwiftShader)
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      ELECTRON_SKIP_BINARY_DOWNLOAD: "1"
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "24"
+      - run: npm ci --no-audit --no-fund
+      - run: npx playwright install --with-deps chromium
+      - run: npx playwright test --workers=1
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: page-results
+          path: /tmp/voxelbreak-playwright
+          if-no-files-found: ignore
+
+  app:
+    name: Electron app (hidden window, 20 launches)
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "24"
+      - run: npm ci --no-audit --no-fund
+      - run: npx playwright install-deps chromium
+      - run: xvfb-run -a npx playwright test --config=playwright.app.config.js --workers=1

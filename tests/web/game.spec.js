@@ -185,7 +185,8 @@ test('узкое окно 360 px: меню, настройки и HUD помещ
   await open(page);
   const fits = () => page.evaluate(() => {
     const W = innerWidth;
-    const bad = [...document.querySelectorAll('button, h1, h2, p, input, #toolbar > div')].filter((e) => e.offsetParent && (e.getBoundingClientRect().right > W + 0.5 || e.getBoundingClientRect().left < -0.5));
+    // и сам элемент в окне, и его текст внутри своей рамки
+    const bad = [...document.querySelectorAll('button, h1, h2, p, input, #toolbar > div')].filter((e) => e.offsetParent && (e.getBoundingClientRect().right > W + 0.5 || e.getBoundingClientRect().left < -0.5 || e.scrollWidth > e.clientWidth + 1));
     return { scroll: document.documentElement.scrollWidth <= W, bad: bad.map((e) => e.id || e.className || e.textContent).slice(0, 5) };
   });
   expect(await fits()).toEqual({ scroll: true, bad: [] });
@@ -256,4 +257,24 @@ test('техника: машина появляется, в неё садятс�
   const crane = await page.evaluate(() => VoxelBreak.sim.vehicles.find((v) => v.type === 'crane').ball.pos[0]);
   await page.evaluate(() => { VoxelBreak.sim.driving = VoxelBreak.sim.vehicles.find((v) => v.type === 'crane'); VoxelBreak.advance(1, { mx: 1 }); });
   expect(Math.abs(await page.evaluate(() => VoxelBreak.sim.vehicles.find((v) => v.type === 'crane').ball.pos[0]) - crane)).toBeGreaterThan(0.5);
+});
+
+test('вид от третьего лица: персонаж со скелетом виден и шагает', async ({ page }) => {
+  const errors = await open(page);
+  await play(page);
+  expect(await page.evaluate(() => !!VoxelBreak.renderer.character && VoxelBreak.renderer.character.root.visible)).toBe(false);
+  await page.evaluate(() => { VoxelBreak.renderer.thirdPerson = true; VoxelBreak.advance(0.05); });
+  const info = await page.evaluate(() => {
+    const c = VoxelBreak.renderer.character;
+    let bones = 0, meshes = 0;
+    c.root.traverse((o) => { if (o.isBone) bones++; if (o.isMesh) meshes++; });
+    return { visible: c.root.visible, bones, meshes, vm: VoxelBreak.renderer.viewmodel.visible };
+  });
+  expect(info).toEqual({ visible: true, bones: 7, meshes: 7, vm: false });
+  const leg = () => page.evaluate(() => VoxelBreak.renderer.character.bones['leg.L'].rotation.x);
+  const a = await leg();
+  await page.evaluate(() => VoxelBreak.advance(0.3, { mz: 1 }));
+  const b = await leg();
+  expect(Math.abs(b - a)).toBeGreaterThan(0.05);
+  expect(errors).toEqual([]);
 });

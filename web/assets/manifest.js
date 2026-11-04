@@ -29,5 +29,7 @@ export const MANIFEST = {
     'item.rocket': { src: 'proc:item.rocket', scale: 0.12 },
     'item.laser': { src: 'proc:item.laser', scale: 0.12 },
     'item.vehicle': { src: 'proc:item.vehicle', scale: 0.12 },
+    // персонаж: скелет и части на костях (из Blender потом - тот же формат костей)
+    character: { src: 'proc:character' },
   },
 };

@@ -1,0 +1,43 @@
+# Игра на GitHub Pages. web/ - весь сайт как есть: ES-модули, three.js в web/vendor, сборки нет.
+# Сам Pages в настройках репозитория не включён: пока его не включат, шаг публикации не пройдёт.
+name: Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Lay out the site
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Copy web/ to _site
+        run: |
+          mkdir -p _site
+          cp -r web/. _site/
+          touch _site/.nojekyll
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: _site
+  deploy:
+    name: Deploy the page
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/configure-pages@v6
+      - id: deployment
+        uses: actions/deploy-pages@v5
