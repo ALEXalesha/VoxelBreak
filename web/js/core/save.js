@@ -10,6 +10,7 @@ import { MATERIALS } from './materials.js';
 
 export const SAVE_VERSION = 1;
 export const SAVE_TAG = 'voxelbreak-save';
+const MAX_BODY_CELLS = 1 << 22;   // 4 млн клеток на тело - больше мир не даёт
 
 // повторы: [число 1..255, значение] ...
 export function rle(bytes) {
@@ -111,11 +112,16 @@ export function deserialize(obj, assets) {
   }
   const physics = new Physics(world);
   if (!Array.isArray(obj.bodies)) throw new Error('повреждены тела');
+  const ids = new Set();
   for (const e of obj.bodies) {
     if (!e || !Number.isInteger(e.id) || e.id < 1 || !vec(e.s, 3) || !e.s.every((n) => Number.isInteger(n) && n >= 1 && n <= 512)
+      || e.s[0] * e.s[1] * e.s[2] > MAX_BODY_CELLS
       || !vec(e.o, 3) || !vec(e.p, 3) || !vec(e.q, 4) || !vec(e.v, 3) || !vec(e.w, 3)) throw new Error('повреждено тело');
+    if (ids.has(e.id)) throw new Error(`повтор тела ${e.id}`);
+    ids.add(e.id);
     const data = unrle(fromB64(e.d), e.s[0] * e.s[1] * e.s[2]);
     checkMaterials(data);
+    if (!data.some((m) => m)) throw new Error(`пустое тело ${e.id}`);
     const b = new Body(e.id, e.s[0], e.s[1], e.s[2], data, e.o);
     b.pos = e.p.slice(); b.q = e.q.slice(); b.v = e.v.slice(); b.w = e.w.slice(); b.sleeping = e.z === 1;
     if (vec(e.t, 9)) { b.sleepT = e.t[0]; b.restT = e.t[1]; b.restPos = e.t.slice(2, 5); b.restQ = e.t.slice(5, 9); }

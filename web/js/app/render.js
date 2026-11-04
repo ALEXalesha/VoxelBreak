@@ -160,10 +160,11 @@ export class Renderer {
   setWorld(sim) {
     for (const c of this.chunks.values()) this.dropChunk(c);
     this.chunks.clear();
-    for (const b of this.bodies.values()) this.scene.remove(b.group);
+    for (const b of this.bodies.values()) { this.scene.remove(b.group); disposeGroup(b.group); }
     this.bodies.clear();
-    for (const v of this.vehicleObjs.values()) this.scene.remove(v.group);
+    for (const o of this.vehicleObjs.values()) this.dropVehicle(o);
     this.vehicleObjs.clear();
+    this.mq.reset();
     this.sim = sim;
     const w = sim.world;
     const p = sim.player;
@@ -253,6 +254,7 @@ export class Renderer {
           const boom = this.model('boom', { length: 48 });
           boom.children[0].position.set(0, -1.5, -1.5);
           o = { group, boom, ball: this.model('ball'), rope: new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]), new THREE.LineBasicMaterial({ color: 0x222222 })) };
+          o.rope.frustumCulled = false;     // точки меняются каждый кадр, сфера отсечения устаревает
           this.scene.add(boom, o.ball, o.rope);
         } else {
           const mdl = this.model(v.model || v.type, v.type === 'car' ? { color: 'red' } : {});
@@ -272,10 +274,18 @@ export class Renderer {
         o.rope.geometry.setFromPoints([new THREE.Vector3(...tip), new THREE.Vector3(...v.ball.pos)]);
       }
     }
-    for (const [v, o] of this.vehicleObjs) if (!alive.has(v)) {
-      this.scene.remove(o.group); if (o.boom) this.scene.remove(o.boom, o.ball, o.rope);
-      this.vehicleObjs.delete(v);
+    for (const [v, o] of this.vehicleObjs) if (!alive.has(v)) { this.dropVehicle(o); this.vehicleObjs.delete(v); }
+  }
+
+  // техника: убрать со сцены всё (и стрелу, шар, трос крана) и освободить геометрию;
+  // материалы общие - их не трогаем
+  dropVehicle(o) {
+    for (const g of [o.group, o.boom, o.ball, o.rope]) {
+      if (!g) continue;
+      this.scene.remove(g);
+      g.traverse((x) => { if (x.geometry) x.geometry.dispose(); });
     }
+    if (o.rope) o.rope.material.dispose();
   }
 
   syncEntities(sim) {

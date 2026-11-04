@@ -23,7 +23,8 @@ function restore(state, areas, size) {
     const visible = areas.some((a) => state.x + out.width - 100 >= a.x && state.x + 100 <= a.x + a.width && state.y >= a.y - 10 && state.y + 60 <= a.y + a.height);
     if (visible) { out.x = Math.round(state.x); out.y = Math.round(state.y); }
   }
-  const area = areas[0];
+  // размер ограничивает тот экран, на котором окно, иначе основной
+  const area = (out.x !== undefined && areas.find((a) => out.x >= a.x - 10 && out.x < a.x + a.width && out.y >= a.y - 10 && out.y < a.y + a.height)) || areas[0];
   if (area) { out.width = Math.min(out.width, area.width); out.height = Math.min(out.height, area.height); }
   return out;
 }

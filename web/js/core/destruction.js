@@ -59,8 +59,10 @@ export class Destruction {
       report.bodies.push(...this.splitBody(b));
     }
     const blast = impulse > 0 ? { x, y, z, r, impulse } : null;
-    if (blast) report.bodies.push(...this.fragments(x, y, z, r, power, seed, blast, removed));
-    report.bodies.push(...this.detach(removed, blast));
+    // отколотое скорлупой - тоже дыры для поиска опоры, но не «выбитое»: в событие удара не идёт
+    const holes = [];
+    if (blast) report.bodies.push(...this.fragments(x, y, z, r, power, seed, blast, holes));
+    report.bodies.push(...this.detach(removed.concat(holes), blast));
     if (impulse > 0) this.blastBodies(x, y, z, r, impulse);
     for (const e of report.explosive) this.pending.push({ ...e, t: 0.12 });
     report.dust = this.enforceBudget();
@@ -257,7 +259,7 @@ function dominant(list) {
 // выбить воксели мира в шаре; край неровный (по зерну), стекло бьётся в полтора раза дальше
 export function carveWorld(world, cx, cy, cz, r, power, seed = 0) {
   const out = [];
-  const R = r * 1.5;
+  const R = r * REACH;
   const x0 = Math.floor(cx - R), x1 = Math.ceil(cx + R), y0 = Math.max(0, Math.floor(cy - R)), y1 = Math.ceil(cy + R), z0 = Math.floor(cz - R), z1 = Math.ceil(cz + R);
   for (let y = y0; y <= y1; y++)
     for (let z = z0; z <= z1; z++)
@@ -272,6 +274,9 @@ export function carveWorld(world, cx, cy, cz, r, power, seed = 0) {
   return out;
 }
 
+// дальше всего бьётся стекло: радиус с разбросом 1,15 r и ещё в полтора раза
+const REACH = 1.15 * 1.5;
+
 function hits(m, d, r, power, jitter) {
   const rr = r * (0.85 + 0.3 * jitter);
   const reach = FRAGILE[m] ? rr * 1.5 : rr;
@@ -284,7 +289,7 @@ function hits(m, d, r, power, jitter) {
 export function carveBody(b, cx, cy, cz, r, power, seed = 0) {
   b.syncR();
   const g = b.toGrid([cx, cy, cz]);
-  const R = r * 1.5;
+  const R = r * REACH;
   const out = [];
   for (let y = Math.max(0, Math.floor(g[1] - R)); y <= Math.min(b.sy - 1, Math.ceil(g[1] + R)); y++)
     for (let z = Math.max(0, Math.floor(g[2] - R)); z <= Math.min(b.sz - 1, Math.ceil(g[2] + R)); z++)

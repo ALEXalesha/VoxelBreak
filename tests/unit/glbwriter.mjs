@@ -26,7 +26,7 @@ export function makeGlb(parts, { shortIndex = true } = {}) {
     json.accessors.push({ bufferView: pv, componentType: 5126, count: pos.length / 3, type: 'VEC3' });
     json.accessors.push({ bufferView: iv, componentType: shortIndex ? 5123 : 5125, count: idx.length, type: 'SCALAR' });
     json.materials.push({ name: p.material?.name || `m${i}`, pbrMetallicRoughness: { baseColorFactor: [...(p.material?.color || [0.8, 0.8, 0.8]), 1] } });
-    json.meshes.push({ primitives: [{ attributes: { POSITION: json.accessors.length - 2 }, indices: json.accessors.length - 1, material: i }] });
+    json.meshes.push({ primitives: [{ attributes: { POSITION: json.accessors.length - 2 }, indices: json.accessors.length - 1, material: i, ...(p.mode != null ? { mode: p.mode } : {}) }] });
     json.nodes.push({ mesh: i, ...(p.node || {}) });
     json.scenes[0].nodes.push(i);
   });

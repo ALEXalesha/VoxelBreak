@@ -91,11 +91,12 @@ export class Sim {
       p.pitch = Math.max(-1.55, Math.min(1.55, p.pitch - input.look[1]));
     }
     if (input.tool != null) this.selectTool(input.tool);
-    if (input.nextTool) this.selectTool((this.toolIndex + input.nextTool + TOOLS.length) % TOOLS.length);
+    if (input.nextTool) this.selectTool((((this.toolIndex + input.nextTool) % TOOLS.length) + TOOLS.length) % TOOLS.length);
     if (input.use) this.toggleVehicle();
     if (input.fly && !this.driving) { p.flying = !p.flying; p.vy = 0; this.emit({ type: 'fly', on: p.flying }); }
 
     if (this.driving) {
+      this.laserOn = null;
       stepVehicle(this, this.driving, input, dt);
       const v = this.driving;
       p.x = v.x; p.y = v.y + 4; p.z = v.z; p.vx = p.vy = p.vz = 0;
@@ -259,8 +260,8 @@ export class Sim {
         e.fuse -= dt;
         if (e.stuck && e.stuck.body) {
           const b = e.stuck.body;
-          if (this.physics.bodies.includes(b)) { b.syncR(); e.pos = b.toWorld(e.stuck.local); } else e.stuck = null;
-        }
+          if (this.physics.bodies.includes(b)) { b.syncR(); e.pos = fromOrigin(b, e.stuck.local); } else e.stuck = null;
+        } else if (e.stuck && e.stuck.cell && !this.world.get(...e.stuck.cell)) e.stuck = null;   // стену под шашкой выбили
         if (!e.stuck) {
           e.vel[1] -= GRAVITY * dt;
           const sp = Math.hypot(...e.vel), d = e.vel.map((c) => c / (sp || 1));
@@ -300,6 +301,7 @@ export class Sim {
       player: { x: p.x, y: p.y, z: p.z, yaw: p.yaw, pitch: p.pitch, flying: p.flying }, time: this.time });
     data.vehicles = this.vehicles.map((v) => ({ type: v.type, x: v.x, y: v.y, z: v.z, yaw: v.yaw, rope: v.rope }));
     data.tool = this.toolIndex;
+    data.ammo = { ...this.ammo };
     data.startTotal = this.startTotal;
     return data;
   }
@@ -321,6 +323,12 @@ export class Sim {
       this.vehicles.push(nv);
     }
     if (Number.isInteger(obj.tool) && obj.tool >= 0 && obj.tool < TOOLS.length) this.toolIndex = obj.tool;
+    if (obj.ammo && typeof obj.ammo === 'object') {
+      for (const t of TOOLS) {
+        const n = obj.ammo[t.id];
+        if (t.ammo && Number.isFinite(n)) this.ammo[t.id] = Math.max(0, Math.min(t.ammo, Math.floor(n)));
+      }
+    }
     this.startTotal = Number.isFinite(obj.startTotal) ? obj.startTotal : this.destruction.total();
     return this;
   }
@@ -330,10 +338,14 @@ function stick(e, hit) {
   const n = hit.normal;
   e.pos = [hit.point[0] + n[0] * 0.3, hit.point[1] + n[1] * 0.3, hit.point[2] + n[2] * 0.3];
   e.vel = [0, 0, 0];
-  if (hit.kind === 'body') { hit.body.syncR(); e.stuck = { body: hit.body, local: localOf(hit.body, e.pos) }; }
-  else e.stuck = { world: true };
+  if (hit.kind === 'body') { hit.body.syncR(); e.stuck = { body: hit.body, local: toOrigin(hit.body, e.pos) }; }
+  else e.stuck = { world: true, cell: hit.point.map((c, k) => Math.floor(c - n[k] * 0.5)) };
 }
-function localOf(b, p) {
+// точка на теле - в координатах от origin сетки: они не меняются, когда сетка ужимается после откола
+function toOrigin(b, p) {
   const g = b.toGrid(p);
-  return [g[0] - b.com[0], g[1] - b.com[1], g[2] - b.com[2]];
+  return [g[0] + b.origin[0], g[1] + b.origin[1], g[2] + b.origin[2]];
+}
+function fromOrigin(b, l) {
+  return b.toWorld([l[0] - b.origin[0] - b.com[0], l[1] - b.origin[1] - b.com[1], l[2] - b.origin[2] - b.com[2]]);
 }

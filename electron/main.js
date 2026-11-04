@@ -8,6 +8,7 @@ const { app, BrowserWindow, Menu, protocol, net, session, screen } = require('el
 const path = require('path');
 const { pathToFileURL } = require('url');
 const WindowState = require('./window-state');
+const { resolveAppPath } = require('./app-path');
 
 const TEST = process.env.VB_TEST === '1';
 const WEB = path.join(__dirname, '..', 'web');
@@ -24,9 +25,8 @@ if (TEST) {
 
 function serve() {
   protocol.handle('app', (req) => {
-    const url = new URL(req.url);
-    const file = path.normalize(path.join(WEB, decodeURIComponent(url.pathname)));
-    if (!file.startsWith(WEB)) return new Response('', { status: 403 });
+    const file = resolveAppPath(WEB, new URL(req.url).pathname);
+    if (!file) return new Response('', { status: 403 });
     return net.fetch(pathToFileURL(file).toString());
   });
 }

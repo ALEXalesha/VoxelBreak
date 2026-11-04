@@ -278,3 +278,23 @@ test('вид от третьего лица: персонаж со скелет�
   expect(Math.abs(b - a)).toBeGreaterThan(0.05);
   expect(errors).toEqual([]);
 });
+
+test('смена мира: старые тела и кран не остаются, геометрия не копится, трос не отсекается', async ({ page }) => {
+  await open(page);
+  await play(page);
+  await page.evaluate(() => VoxelBreak.advance(0.1));
+  const base = await page.evaluate(() => VoxelBreak.renderer.scene.children.length);
+  await page.evaluate(() => { const S = VoxelBreak.sim; S.vehicleType = 2; VoxelBreak.advance(0.1, { tool: 6, fire1Pressed: true }); });
+  const rope = await page.evaluate(() => [...VoxelBreak.renderer.vehicleObjs.values()][0].rope.frustumCulled);
+  expect(rope).toBe(false);
+  const counts = [];
+  for (let i = 0; i < 3; i++) {
+    await play(page, { kind: 'town', size: 'small', seed: '7' });
+    await page.evaluate(() => VoxelBreak.advance(0.1));
+    counts.push(await page.evaluate(() => ({ children: VoxelBreak.renderer.scene.children.length, geo: VoxelBreak.renderer.gl.info.memory.geometries })));
+  }
+  expect(counts[0].children).toBe(base);
+  expect(counts[2].children).toBe(counts[0].children);
+  expect(counts[2].geo).toBeLessThanOrEqual(counts[0].geo + 5);
+  expect(await page.evaluate(() => VoxelBreak.renderer.vehicleObjs.size)).toBe(0);
+});

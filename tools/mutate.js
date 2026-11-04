@@ -52,7 +52,13 @@ const MUTANTS = [
   { id: 'laser-cuts-nothing', file: 'web/js/game/sim.js', from: 'this.destruction.sphere(hit.point[0] - n[0] * 0.45, hit.point[1] - n[1] * 0.45, hit.point[2] - n[2] * 0.45, t.radius, t.power);', to: 'void n;', unit: ['sim', 'лазер режет'] },
   { id: 'dynamite-never-blows', file: 'web/js/game/sim.js', from: '        if (e.fuse <= 0) {', to: '        if (e.fuse <= -100) {', unit: ['sim', 'динамит: прилипает'] },
   { id: 'pellets-one-by-one', file: 'web/js/game/sim.js', from: 'const hits = pelletDirs(dir, t.pellets, t.spread, Math.floor(this.time * 60)).map((d) => [d, this.rayHit(eye, d, t.range)]);', to: 'const hits = pelletDirs(dir, t.pellets, t.spread, Math.floor(this.time * 60)).slice(0, 2).map((d) => [d, this.rayHit(eye, d, t.range)]);', unit: ['sim', 'дробовик'] },
-  { id: 'car-through-metal', file: 'web/js/game/vehicles.js', from: 'if (still.length) { v.speed = S.blade ? v.speed * 0.5 : -v.speed * 0.25; return; }', to: 'if (false) { return; }', unit: ['sim', 'машина едет'] },
+  // ---------- находки ревью 04.11 ----------
+  { id: 'car-crawls-through', file: 'web/js/game/vehicles.js', from: "if (still.length) { v.speed = S.blade ? Math.min(v.speed * 0.5, 1) : -v.speed * 0.25; return; }", to: 'if (still.length && v.speed > 0.5) { v.speed *= 0.5; return; }', unit: ['review', 'ревью 1'] },
+  { id: 'mover-does-not-wake', file: 'web/js/core/physics.js', from: '&& overlap(A.box, B.box)) this.toWake.push(sleeper);', to: '&& false) this.toWake.push(sleeper);', unit: ['review', 'ревью 2'] },
+  { id: 'no-wake-on-support-loss', file: 'web/js/core/destruction.js', from: '    this.physics.wakeRegion(lo[0], lo[1], lo[2], hi[0] + 1, hi[1] + 1, hi[2] + 1);\n', to: '', unit: ['physics', 'сон: спящее'] },
+  { id: 'stale-mesh-accepted', file: 'web/js/app/meshq.js', from: 'if (epoch !== this.epoch || this.latest.get(id) !== version) return;', to: 'if (this.latest.get(id) !== version) return;', unit: ['review', 'ревью 8'] },
+  { id: 'save-duplicate-ids', file: 'web/js/core/save.js', from: "    if (ids.has(e.id)) throw new Error(`повтор тела ${e.id}`);\n", to: '', unit: ['review', 'ревью 12'] },
+  { id: 'crane-ghost', file: 'web/js/app/render.js', from: '    for (const o of this.vehicleObjs.values()) this.dropVehicle(o);\n', to: '', web: 'смена мира' },
   // ---------- настройки ----------
   { id: 'rebind-no-swap', file: 'web/js/game/settings.js', from: '  if (other) out[other] = bindings[action];\n', to: '', unit: ['settings', 'клавиши: занятая'], web: 'клавиши: переназначение' },
   { id: 'missing-translation', file: 'web/js/game/i18n.js', from: "    empty: 'Out of ammo',\n", to: '', unit: ['settings', 'переводы'] },

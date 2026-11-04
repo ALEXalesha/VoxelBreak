@@ -39,7 +39,11 @@ export class Physics {
   }
   remove(body) {
     const i = this.bodies.indexOf(body);
-    if (i >= 0) this.bodies.splice(i, 1);
+    if (i < 0) return;
+    this.bodies.splice(i, 1);
+    // что лежало на нём или рядом - просыпается
+    const a = body.aabb();
+    this.wakeRegion(a[0], a[1], a[2], a[3], a[4], a[5]);
   }
   get(id) { return this.bodies.find((b) => b.id === id) || null; }
   awakeCount() { let n = 0; for (const b of this.bodies) if (!b.sleeping) n++; return n; }
@@ -156,6 +160,11 @@ export class Physics {
         const B = list[j];
         if (B.box[0] > A.box[3]) break;
         if (A.b.sleeping && B.b.sleeping) continue;
+        // движущееся тело будит спящее, с которым соприкоснулось (опору выдернули, толкнули соседа)
+        if (A.b.sleeping !== B.b.sleeping) {
+          const mover = A.b.sleeping ? B.b : A.b, sleeper = A.b.sleeping ? A.b : B.b;
+          if ((dot(mover.v, mover.v) > SLEEP_V2 * 4 || dot(mover.w, mover.w) > SLEEP_W2 * 4) && overlap(A.box, B.box)) this.toWake.push(sleeper);
+        }
         if (B.box[1] > A.box[4] || B.box[4] < A.box[1] || B.box[2] > A.box[5] || B.box[5] < A.box[2]) continue;
         // точки тела поменьше против сетки тела побольше
         const [s, g] = A.b.count <= B.b.count ? [A.b, B.b] : [B.b, A.b];
@@ -193,6 +202,8 @@ export class Physics {
     if (any) { s.touching = true; g.touching = true; }
   }
 }
+
+const overlap = (a, b) => a[0] <= b[3] && a[3] >= b[0] && a[1] <= b[4] && a[4] >= b[1] && a[2] <= b[5] && a[5] >= b[2];
 
 function clampVel(b) {
   const v2 = dot(b.v, b.v);

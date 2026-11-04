@@ -104,15 +104,15 @@ xvfb-run -a npm run test:app
 npm run mutate
 ```
 
-- **Laws (node:test, 88):** world generation is deterministic by seed; chunks match at the seams and the
+- **Laws (node:test, 100):** world generation is deterministic by seed; chunks match at the seams and the
   world does not depend on the chunk order; after any destruction nothing floats unattached; the voxel
   count is conserved (world + bodies + destroyed + dust); an explosion of radius R removes what it should;
   a piece without support falls and lies down; meshes have no holes and no extra faces, each face has the
   material and the corner shade of its voxel; save and load round-trip; GLB models convert to the expected
   voxels; the reference scene with a large destruction stays within the frame budget.
-- **Branch coverage (c8):** core 97.9 %, all code without windows 96.7 % (thresholds 90 % and 80 %, checked in CI).
-- **Mutants:** `tools/mutate.js` breaks one rule at a time (41 mutants), every law must catch its own; all 41 are killed.
-- **Page (Playwright, 18 laws, headless Chromium, WebGL via SwiftShader):** no errors and no network, both languages,
+- **Branch coverage (c8):** core 97.9 %, all code without windows 96.8 % (thresholds 90 % and 80 %, checked in CI).
+- **Mutants:** `tools/mutate.js` breaks one rule at a time (46 mutants), every law must catch its own; all 46 are killed.
+- **Page (Playwright, 19 laws, headless Chromium, WebGL via SwiftShader):** no errors and no network, both languages,
   contrast of all five themes, a 360 px window, key reassignment, saving, vehicles, without a Worker.
 - **App (Electron, 4 laws):** the window is never shown and never takes focus, settings and saves survive a restart,
   navigation is blocked, 20 launches in a row without memory growth.

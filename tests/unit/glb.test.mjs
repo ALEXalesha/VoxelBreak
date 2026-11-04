@@ -77,7 +77,8 @@ test('испорченный GLB - понятная ошибка', () => {
   assert.throws(() => parseGlb(nojson), /нет описания/);
   assert.throws(() => voxelize([], {}), /нет треугольников/);
   assert.throws(() => voxelize(parseGlb(makeGlb([{ ...boxMesh(100, 100, 100) }])), { voxel: 0.1 }), /слишком большая/);
-  const lines = makeGlb([{ ...boxMesh(1, 1, 1) }]);
+  // линии и точки (не треугольники) пропускаются, ящик рядом остаётся
+  const lines = makeGlb([{ ...boxMesh(1, 1, 1) }, { ...boxMesh(3, 3, 3), mode: 1 }]);
   const tris = parseGlb(lines);
   assert.equal(tris.length, 12);
 });

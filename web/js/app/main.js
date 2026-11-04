@@ -43,6 +43,7 @@ const sound = new Sound();
 const held = new Set(), pressed = new Set();
 const look = [0, 0];
 let wheel = 0;
+let heardAt = -1;
 let sim = null, state = 'boot', locked = false, wasLocked = false, last = performance.now(), acc = 0, fps = 60, camToggle = false;
 
 const ui = new UI(settings, {
@@ -246,7 +247,8 @@ function draw(dt) {
   renderer.frame(sim, dt, events);
   const ear = sim.eye();
   sound.events(events, ear, (m) => (MATERIALS[m] ? MATERIALS[m].name : ''));
-  sound.impacts(sim.physics.impacts, ear);
+  // удары - только свежие: на паузе и при частоте экрана выше 60 Гц шаг тот же, стук не повторяется
+  if (sim.time !== heardAt) { sound.impacts(sim.physics.impacts, ear); heardAt = sim.time; }
   sound.setLaser(state === 'playing' && !!sim.laserOn);
   if (state === 'playing') ui.hud(sim, fps);
 }

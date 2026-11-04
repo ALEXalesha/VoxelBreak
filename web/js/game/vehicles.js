@@ -52,12 +52,12 @@ export function stepVehicle(sim, v, input, dt) {
   for (const [px, pz] of pts) ground = Math.max(ground, groundAt(world, px, v.y, pz, 2.2));
   // таран: что впереди выше ступеньки
   const base = Math.max(ground, v.y);
-  const hit = frontVoxels(world, v, S, nx, nz, base);
+  const hit = v.speed > 0 ? frontVoxels(world, v, S, nx, nz, base) : [];
   v.hitT = Math.max(0, v.hitT - dt);
-  if (hit.length && Math.abs(v.speed) > 0.5) {
+  if (hit.length) {
     const speedK = Math.min(1, Math.abs(v.speed) / S.maxV);
     const power = S.blade ? S.power * (0.6 + 0.4 * speedK) : S.power * speedK;
-    if (v.hitT <= 0) {
+    if (v.hitT <= 0 && v.speed > 0.5) {
       // удар по всей ширине: свой шар на каждую полосу перед машиной
       const bins = new Map();
       for (const [x, y, z] of hit) {
@@ -76,9 +76,13 @@ export function stepVehicle(sim, v, input, dt) {
       v.hitT = S.blade ? 0.12 : 0.08;
     }
     const still = frontVoxels(world, v, S, nx, nz, base);
-    if (still.length) { v.speed = S.blade ? v.speed * 0.5 : -v.speed * 0.25; return; }
+    // не пробил - стоит на месте, сколько ни дави на газ (раньше на малой скорости проползал сквозь)
+    if (still.length) { v.speed = S.blade ? Math.min(v.speed * 0.5, 1) : -v.speed * 0.25; return; }
     v.speed *= S.blade ? 0.85 : 0.7;
   }
+  // за краем мира ехать некуда
+  const r = S.len / 2;
+  if (nx < r || nz < r || nx > world.nx - r || nz > world.nz - r) { v.speed = 0; return; }
   v.x = nx; v.z = nz;
   // тела на пути толкаются
   for (const b of sim.physics.bodies) {

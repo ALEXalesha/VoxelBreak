@@ -12,6 +12,7 @@ export class MeshQueue {
     this.latest = new Map();    // id -> последняя запрошенная версия
     this.callbacks = new Map();
     this.built = 0;
+    this.epoch = 0;             // номер мира: ответы для прошлого мира выбрасываются
     if (useWorker && typeof Worker !== 'undefined') {
       try {
         this.worker = new Worker(new URL('./mesh-worker.js', import.meta.url), { type: 'module' });
@@ -43,19 +44,25 @@ export class MeshQueue {
       if (!job) continue;
       if (this.worker) {
         this.busy++;
-        this.worker.postMessage({ id, version: job.version, grid: job.grid, dims: job.dims }, [job.grid.buffer]);
+        this.worker.postMessage({ id, version: job.version, epoch: this.epoch, grid: job.grid, dims: job.dims }, [job.grid.buffer]);
       } else {
-        this.done({ id, version: job.version, mesh: greedyMesh(job.grid, job.dims) }, true);
+        this.done({ id, version: job.version, epoch: this.epoch, mesh: greedyMesh(job.grid, job.dims) }, true);
       }
     }
   }
 
-  done({ id, version, mesh }, local = false) {
+  done({ id, version, epoch, mesh }, local = false) {
     if (!local) this.busy = Math.max(0, this.busy - 1);
-    if (this.latest.get(id) !== version) return;      // устарело
+    if (epoch !== this.epoch || this.latest.get(id) !== version) return;      // устарело
     this.built++;
     const cb = this.callbacks.get(id);
     if (cb) cb(mesh, version);
+  }
+
+  // новый мир: всё ждущее и всё, что ещё строится для старого, - мимо
+  reset() {
+    this.epoch++;
+    this.waiting.clear(); this.order.length = 0; this.latest.clear(); this.callbacks.clear();
   }
 
   forget(id) { this.latest.delete(id); this.callbacks.delete(id); this.waiting.delete(id); }

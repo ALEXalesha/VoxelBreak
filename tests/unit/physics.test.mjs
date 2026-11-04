@@ -96,7 +96,10 @@ test('сон: спящее не двигается; пропала опора - 
   const y = b.pos[1];
   for (let i = 0; i < 60; i++) ph.step();
   assert.equal(b.pos[1], y, 'спит и не дрожит');
-  de.sphere(20.5, 14.5, 20.5, 1.2, 20);
+  // выбиваем середину столба, само тело удар не задевает: будит только пропавшая опора мира
+  const count = b.count;
+  de.sphere(20.5, 8.5, 20.5, 1.2, 20);
+  assert.equal(b.count, count, 'тело не задето');
   assert.equal(b.sleeping, false, 'проснулся');
   for (let i = 0; i < 120; i++) ph.step();
   assert.ok(b.pos[1] < y - 0.5, 'упал');
