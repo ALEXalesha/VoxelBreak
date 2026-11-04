@@ -327,7 +327,8 @@ export class Renderer {
 
   effects(events) {
     for (const e of events) {
-      if (e.type === 'hit' && e.removed > 0) {
+      if ((e.type === 'hit' || e.type === 'crack') && e.removed > 0) {
+        if (e.type === 'crack') e.r = 1 + e.speed / 28;
         const col = MATERIALS[e.mat] ? (MATERIALS[e.mat].color[0] << 16) | (MATERIALS[e.mat].color[1] << 8) | MATERIALS[e.mat].color[2] : 0x888888;
         const n = Math.min(40, 4 + e.removed);
         for (let i = 0; i < n; i++) this.spawn([e.x + rnd() * e.r, e.y + rnd() * e.r, e.z + rnd() * e.r], [rnd() * 14, Math.random() * 14, rnd() * 14], 0.8 + Math.random() * 0.8, col, 0.35 + Math.random() * 0.3);
@@ -446,8 +447,9 @@ export class Renderer {
       const v = sim.driving;
       if (v.type === 'crane') {
         const tip = craneTip(v);
-        cam.position.set(v.x - forwardOf(v)[0] * 14, v.y + 46, v.z - forwardOf(v)[2] * 14);
-        cam.lookAt(tip[0] * 0.5 + v.ball.pos[0] * 0.5, v.ball.pos[1], tip[2] * 0.5 + v.ball.pos[2] * 0.5);
+        const f = forwardOf(v);
+        cam.position.set(v.x - f[0] * 10 + f[2] * 6, v.y + 56, v.z - f[2] * 10 - f[0] * 6);
+        cam.lookAt(tip[0] * 0.4 + v.ball.pos[0] * 0.6, v.ball.pos[1] * 0.7 + tip[1] * 0.3, tip[2] * 0.4 + v.ball.pos[2] * 0.6);
       } else {
         const f = forwardOf(v);
         cam.position.set(v.x - f[0] * 30, v.y + 14, v.z - f[2] * 30);

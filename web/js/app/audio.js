@@ -91,6 +91,7 @@ export class Sound {
           else this.burst({ freq: 500 + Math.random() * 300, dur: 0.22 + Math.min(0.5, e.removed / 200), gain: Math.min(0.6, 0.2 + e.removed / 100) * near });
           break;
         }
+        case 'crack': this.burst({ freq: 260 + Math.random() * 120, dur: 0.35 + Math.min(0.6, e.removed / 80), gain: Math.min(0.7, 0.15 + e.speed / 80) * near }); break;
         case 'swing': this.burst({ freq: 900, type: 'bandpass', q: 2, dur: 0.16, gain: 0.12 }); break;
         case 'shot': this.burst({ freq: 2200, dur: 0.28, gain: 0.7 }); this.tone({ freq: 140, to: 60, dur: 0.2, gain: 0.4 }); break;
         case 'launch': this.burst({ freq: 700, type: 'bandpass', q: 0.7, dur: 0.8, gain: 0.4, attack: 0.05 }); break;
