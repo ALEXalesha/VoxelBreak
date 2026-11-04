@@ -8,7 +8,8 @@ import { Sim } from '../../web/js/game/sim.js';
 import { greedyMesh } from '../../web/js/core/mesher.js';
 import { MAX_BODIES } from '../../web/js/core/destruction.js';
 
-const K = Number(process.env.VB_PERF_SCALE || 1);
+// под c8 (покрытие) код в 2-3 раза медленнее: там пороги втрое шире, а строгий прогон - отдельным шагом CI
+const K = Number(process.env.VB_PERF_SCALE || 1) * (process.env.NODE_V8_COVERAGE ? 3 : 1);
 const LIMIT = { blast: 300 * K, frame: 40 * K, avg: 8 * K, settled: 1.0 * K, mesh: 30 * K };
 
 function demolish(sim) {

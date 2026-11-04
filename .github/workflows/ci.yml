@@ -25,6 +25,8 @@ jobs:
       - run: npm ci --no-audit --no-fund
       - name: Laws with branch coverage (core >= 90 %, no-window code >= 80 %)
         run: npm run cover
+      - name: Frame budget on the reference scene (without coverage instrumentation)
+        run: node --test tests/unit/perf.test.mjs
       - name: Every mutant is in place
         run: node tools/mutate.js --check
       - name: Mutants of node laws are killed

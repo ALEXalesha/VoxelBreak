@@ -13,7 +13,7 @@ test('CI: ubuntu, node 24, покрытие с порогами, мутанты,
   const ci = read('.github/workflows/ci.yml');
   assert.match(ci, /runs-on: ubuntu-latest/);
   assert.equal((ci.match(/node-version: "24"/g) || []).length, 3);
-  for (const step of ['npm run cover', 'tools/mutate.js --check', 'tools/mutate.js --node', 'npx playwright test --workers=1', 'playwright.app.config.js', 'xvfb-run']) assert.ok(ci.includes(step), step);
+  for (const step of ['npm run cover', 'node --test tests/unit/perf.test.mjs', 'tools/mutate.js --check', 'tools/mutate.js --node', 'npx playwright test --workers=1', 'playwright.app.config.js', 'xvfb-run']) assert.ok(ci.includes(step), step);
   const pkg = JSON.parse(read('package.json'));
   assert.match(pkg.scripts.cover, /coverage-check/);
   assert.ok(read('tools/coverage-check.js').includes('min: 90') && read('tools/coverage-check.js').includes('min: 80'));

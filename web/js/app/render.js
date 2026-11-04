@@ -18,7 +18,7 @@ const VM_POSE = {
   hands: { p: [0.34, -0.36, -0.5], r: [0.25, 0.1, 0] },
   dynamite: { p: [0.34, -0.34, -0.52], r: [0.6, 0.25, 0.3] },
   shotgun: { p: [0.28, -0.3, -0.42], r: [0, 0.05, 0] },
-  rocket: { p: [0.3, -0.3, -0.34], r: [0, 0.06, 0] },
+  rocket: { p: [0.34, -0.34, -0.5], r: [0.02, 0.08, 0] },
   laser: { p: [0.28, -0.3, -0.42], r: [0, 0.05, 0] },
   vehicle: { p: [0.3, -0.32, -0.45], r: [0.7, 0.1, 0] },
 };
@@ -491,7 +491,7 @@ export class Renderer {
     const sw = Math.sin(this.swingT * Math.PI);
     vm.position.set(pose.p[0] - sw * 0.12, pose.p[1] + bob + this.kickT * 0.04 - sw * 0.05, pose.p[2] + this.kickT * 0.1 - sw * 0.2);
     vm.rotation.set(pose.r[0] - sw * 1.6 + this.kickT * 0.3, pose.r[1] + sw * 0.3, pose.r[2]);
-    vm.visible = !sim.driving && !this.thirdPerson && !this.orbit;
+    vm.visible = !sim.driving && !this.thirdPerson && !this.orbit && !this.hideViewmodel;
     this.vmCamera.fov = 60;
 
     const gl = this.gl;

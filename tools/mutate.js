@@ -30,6 +30,7 @@ const MUTANTS = [
   { id: 'dust-not-counted', file: 'web/js/core/destruction.js', from: '{ this.dust += list.length; this.events.push(', to: '{ this.events.push(', unit: ['destruction', 'масса сохраняется|оторванное = исчезнувшее'] },
   { id: 'blast-too-wide', file: 'web/js/core/destruction.js', from: 'const rr = r * (0.85 + 0.3 * jitter);', to: 'const rr = r * (1.1 + 0.3 * jitter);', unit: ['destruction', 'взрыв радиуса R'] },
   { id: 'glass-not-fragile', file: 'web/js/core/destruction.js', from: 'const reach = FRAGILE[m] ? rr * 1.5 : rr;', to: 'const reach = rr;', unit: ['destruction', 'стекло бьётся дальше'] },
+  { id: 'no-impact-break', file: 'web/js/core/destruction.js', from: 'export const BREAK_V = 14,', to: 'export const BREAK_V = 1e9,', unit: ['destruction', 'удар о землю'] },
   { id: 'no-chain-reaction', file: 'web/js/core/destruction.js', from: 'for (const e of report.explosive) this.pending.push({ ...e, t: 0.12 });', to: 'void report;', unit: ['destruction', 'цепная реакция'] },
   // ---------- сетка ----------
   { id: 'mesh-extra-faces', file: 'web/js/core/mesher.js', from: '} else if (!OPAQUE[b]) {', to: '} else if (b !== a) {', unit: ['mesh', 'без дыр и лишних граней|швы чанков'] },

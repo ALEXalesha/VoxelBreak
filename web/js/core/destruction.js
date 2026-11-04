@@ -14,6 +14,7 @@ const EXPLOSIVE = MATERIALS.map((m) => m.explosive);
 export const MIN_BODY = 4;          // меньше - пыль
 export const MAX_BODIES = 600;      // бюджет тел: сверх него мелкие тела рассыпаются в пыль
 export const MAX_NEW_BODIES = 80;   // за один удар
+export const BREAK_V = 14, BREAK_MAX = 6;   // разлом при ударе: скорость (воксель/с) и сколько за шаг
 
 export class Destruction {
   constructor(world, physics) {
@@ -73,8 +74,33 @@ export class Destruction {
     return this.sphere(x, y, z, r, power, { impulse: 18 + r * 3 });
   }
 
+  // разлом при ударе: тело, ударившееся быстрее BREAK_V, крошится в точке удара; тяжёлое - сильнее.
+  // Берутся самые сильные удары прошлого шага физики, не больше BREAK_MAX за шаг.
+  impacts(list) {
+    const seen = new Set();
+    const order = list.slice().sort((p, q) => q.speed - p.speed || p.a.id - q.a.id);
+    let n = 0;
+    for (const im of order) {
+      if (n >= BREAK_MAX || im.speed < BREAK_V) break;
+      for (const b of [im.a, im.b]) {
+        if (!b || seen.has(b) || !this.physics.bodies.includes(b)) continue;
+        seen.add(b);
+        const heavy = 1 + Math.log10(Math.max(1, b.mass / 150));
+        const power = Math.min(16, im.speed * 0.11 * heavy);
+        const hit = carveBody(b, im.x, im.y, im.z, 1 + im.speed / 28, power, this.seed++);
+        if (!hit.length) continue;
+        n++;
+        this.destroyed += hit.length;
+        this.events.push({ type: 'crack', x: im.x, y: im.y, z: im.z, removed: hit.length, mat: dominant(hit), speed: im.speed });
+        this.splitBody(b);
+      }
+    }
+    return n;
+  }
+
   // время идёт: взрывы горючего по очереди
   update(dt) {
+    this.impacts(this.physics.impacts);
     const due = [];
     for (const p of this.pending) { p.t -= dt; if (p.t <= 0) due.push(p); }
     this.pending = this.pending.filter((p) => p.t > 0);

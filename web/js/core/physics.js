@@ -13,6 +13,7 @@ const MAX_V = 70, MAX_W = 25;
 const SLOP = 0.02;
 const FRICTION = 0.6, RESTITUTION = 0.15;
 const SLEEP_V2 = 0.3, SLEEP_W2 = 0.08, SLEEP_T = 0.6;
+export const IMPACT_V = 6;            // удар быстрее - записывается (звук, разлом)
 const REST_T = 1, REST_MOVE = 0.3, REST_TURN = Math.cos(0.08 / 2);
 
 function sleep(b) { b.sleeping = true; b.v = [0, 0, 0]; b.w = [0, 0, 0]; b.sleepT = 0; }
@@ -84,7 +85,7 @@ export class Physics {
     for (const b of awake) this.worldContacts(b, contacts);
     this.bodyContacts(contacts);
     this.contactsLast = contacts.length;
-    for (const c of contacts) prepare(c);
+    for (const c of contacts) prepare(c, this.impacts);
     for (let it = 0; it < ITER; it++) for (const c of contacts) solve(c);
     // глубина: выталкивание по средней нормали касаний тела
     for (const c of contacts) {
@@ -185,7 +186,7 @@ export class Physics {
       if (g.sleeping || s.sleeping) {
         const sleeper = g.sleeping ? g : s, mover = g.sleeping ? s : g;
         const rel = -dot(mover.v, n) * (mover === s ? 1 : -1);
-        if (rel > 2.5) { this.toWake.push(sleeper); this.impacts.push({ x: wx, y: wy, z: wz, speed: rel }); }
+        if (rel > 2.5) { this.toWake.push(sleeper); this.impacts.push({ a: mover, b: null, x: wx, y: wy, z: wz, speed: rel }); }
       }
       out.push(contact(s, g, [n[0], n[1], n[2], c[3]], wx, wy, wz));
     }
@@ -260,7 +261,7 @@ function contact(a, b, c, wx, wy, wz) {
 // d (3), ra×d (3), Ia·(ra×d) (3), rb×d... заменено на (3+3) только при теле b - см. ниже
 const STRIDE = 15;   // d(3) raXd(3) IraXd(3) rbXd(3) IrbXd(3)
 
-function prepare(c) {
+function prepare(c, impacts) {
   const n = c.n;
   let t1x, t1y, t1z;
   if (Math.abs(n[0]) < 0.6) { t1x = 0; t1y = n[2]; t1z = -n[1]; } else { t1x = -n[2]; t1y = 0; t1z = n[0]; }
@@ -299,6 +300,7 @@ function prepare(c) {
   c.t1 = [t1x, t1y, t1z]; c.t2 = [t2x, t2y, t2z];
   const vn = relVel(c, 0);
   c.target = vn < -3 ? -RESTITUTION * vn : 0;
+  if (vn < -IMPACT_V && impacts.length < 400) impacts.push({ a, b, x: a.pos[0] + ra[0], y: a.pos[1] + ra[1], z: a.pos[2] + ra[2], speed: -vn });
 }
 
 // относительная скорость точки касания вдоль направления k (0 - нормаль, 1, 2 - касательные)

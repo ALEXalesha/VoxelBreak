@@ -56,7 +56,7 @@ night, warm) and two languages (Russian, English).
   flying chunks. Bodies split again when hit.
 - **Own physics.** Surface voxels of a body are contact spheres against world voxels and other bodies;
   sequential impulses with friction, sleeping bodies cost nothing. A budget keeps the frame: tiny pieces
-  turn to dust, the number of bodies is capped.
+  turn to dust, the number of bodies is capped. A body that hits the ground hard cracks at the point of impact.
 - **Models through one layer.** Houses, cars, trees, items and vehicles are built in code now
   (`web/assets/proc`), but the game asks only `assets.get(id)`. Changing a line in `web/assets/manifest.js`
   to a `.glb` from Blender swaps the model: triangles are converted to voxels at load time, the material
@@ -104,17 +104,17 @@ xvfb-run -a npm run test:app
 npm run mutate
 ```
 
-- **Laws (node:test, 87):** world generation is deterministic by seed; chunks match at the seams and the
+- **Laws (node:test, 88):** world generation is deterministic by seed; chunks match at the seams and the
   world does not depend on the chunk order; after any destruction nothing floats unattached; the voxel
   count is conserved (world + bodies + destroyed + dust); an explosion of radius R removes what it should;
   a piece without support falls and lies down; meshes have no holes and no extra faces, each face has the
   material and the corner shade of its voxel; save and load round-trip; GLB models convert to the expected
   voxels; the reference scene with a large destruction stays within the frame budget.
-- **Branch coverage (c8):** core 97 %, all code without windows 96 % (thresholds 90 % and 80 %, checked in CI).
-- **Mutants:** `tools/mutate.js` breaks one rule at a time (39 mutants), every law must catch its own.
-- **Page (Playwright, headless Chromium, WebGL via SwiftShader):** no errors and no network, both languages,
+- **Branch coverage (c8):** core 97.9 %, all code without windows 96.7 % (thresholds 90 % and 80 %, checked in CI).
+- **Mutants:** `tools/mutate.js` breaks one rule at a time (41 mutants), every law must catch its own; all 41 are killed.
+- **Page (Playwright, 18 laws, headless Chromium, WebGL via SwiftShader):** no errors and no network, both languages,
   contrast of all five themes, a 360 px window, key reassignment, saving, vehicles, without a Worker.
-- **App (Electron):** the window is never shown and never takes focus, settings and saves survive a restart,
+- **App (Electron, 4 laws):** the window is never shown and never takes focus, settings and saves survive a restart,
   navigation is blocked, 20 launches in a row without memory growth.
 - Pointer lock is only ever a stub in tests.
 

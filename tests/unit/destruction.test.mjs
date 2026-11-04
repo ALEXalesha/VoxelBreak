@@ -203,3 +203,19 @@ test('ужатие сетки тела не двигает воксели в м�
   assert.equal(after.length, keep.length);
   for (let i = 0; i < keep.length; i++) for (let k = 0; k < 3; k++) assert.ok(Math.abs(keep[i][k] - after[i][k]) < 1e-9);
 });
+
+test('удар о землю: тяжёлая плита с высоты раскалывается, ящик с малой высоты цел; масса сходится', () => {
+  const w = flatWorld(3, 3);
+  const ph = new Physics(w), de = new Destruction(w, ph);
+  const start = de.total();
+  const slab = ph.add(bar(20, 45, 20, 14, 3, 14, M.BRICK));
+  const crate = ph.add(bar(70, 7, 70, 3, 3, 3, M.PLANK));
+  const total0 = de.total();
+  for (let i = 0; i < 300; i++) { de.update(1 / 60); ph.step(); }
+  assert.ok(de.destroyed > 0, 'плита откололась в месте удара');
+  assert.ok(ph.bodies.length > 2 || ph.bodies.find((b) => b === slab).count < 14 * 3 * 14, 'раскололась');
+  assert.equal(crate.count, 27, 'ящик с 0,5 м цел');
+  assert.equal(de.total(), total0);
+  assert.ok(total0 > start);
+  assert.ok(de.events.some((e) => e.type === 'crack'));
+});
