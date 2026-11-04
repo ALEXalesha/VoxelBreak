@@ -18,7 +18,8 @@
     "mutate": "node tools/mutate.js",
     "vendor": "node tools/build-vendor.js",
     "screens": "node tools/screenshots.js",
-    "dist": "electron-builder --win portable nsis --x64"
+    "dist": "electron-builder --win portable nsis --x64",
+    "icon": "node tools/make-icon.js"
   },
   "devDependencies": {
     "@playwright/test": "1.63.0",
@@ -26,6 +27,58 @@
     "electron": "43.0.0",
     "gifenc": "1.0.3",
     "pngjs": "7.0.0",
-    "three": "0.170.0"
+    "three": "0.170.0",
+    "electron-builder": "26.0.12"
+  },
+  "build": {
+    "appId": "com.alexalesha.voxelbreak",
+    "productName": "VoxelBreak",
+    "copyright": "Copyright (c) 2026 ALEXalesha",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "electron/**",
+      "web/**",
+      "assets/icon.ico",
+      "assets/icon.png",
+      "LICENSE",
+      "!**/*.map"
+    ],
+    "electronLanguages": [
+      "en-US",
+      "ru"
+    ],
+    "compression": "maximum",
+    "publish": null,
+    "win": {
+      "icon": "assets/icon.ico",
+      "target": [
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "portable": {
+      "artifactName": "VoxelBreak-${version}-Portable.${ext}"
+    },
+    "nsis": {
+      "artifactName": "VoxelBreak-${version}-Setup.${ext}",
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "VoxelBreak"
+    }
   }
 }
