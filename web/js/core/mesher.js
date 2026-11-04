@@ -8,12 +8,12 @@ const AO_LIGHT = [0.42, 0.62, 0.8, 1];
 const GLASS = M.GLASS;
 
 class Buf {
-  constructor() { this.pos = []; this.nrm = []; this.col = []; this.vary = []; this.idx = []; this.quads = 0; }
+  constructor() { this.pos = []; this.nrm = []; this.col = []; this.vary = []; this.idx = []; this.ao = []; this.mats = []; this.quads = 0; }
   pack() {
     return {
       positions: new Float32Array(this.pos), normals: new Int8Array(this.nrm),
       colors: new Uint8Array(this.col), vary: new Uint8Array(this.vary),
-      indices: new Uint32Array(this.idx), quads: this.quads,
+      indices: new Uint32Array(this.idx), ao: new Uint8Array(this.ao), mats: new Uint8Array(this.mats), quads: this.quads,
     };
   }
 }
@@ -102,6 +102,7 @@ function emit(buf, d, u, v, dir, s, i, j, w, h, key) {
     const lv = (key >> 8) & 0xff;
     const a = lv === 0xff ? 3 : (lv >> (k * 2)) & 3;
     ao.push(a);
+    buf.ao.push(a);
     const f = AO_LIGHT[a];
     buf.col.push(Math.round(mat.color[0] * f), Math.round(mat.color[1] * f), Math.round(mat.color[2] * f));
     buf.vary.push(Math.round(mat.vary * 255));
@@ -111,6 +112,7 @@ function emit(buf, d, u, v, dir, s, i, j, w, h, key) {
   const tri = flip ? [1, 2, 3, 1, 3, 0] : [0, 1, 2, 0, 2, 3];
   if (dir < 0) tri.reverse();
   for (const t of tri) buf.idx.push(base + t);
+  buf.mats.push(key & 0xff);
   buf.quads++;
 }
 

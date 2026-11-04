@@ -31,6 +31,15 @@ test('ящик падает с высоты, ложится на землю бе
   assert.ok(minLow > 5 - 0.4, `не проваливался: ${minLow}`);
 });
 
+test('трение: ящик, пущенный по земле, тормозит и останавливается', () => {
+  const ph = new Physics(flat());
+  const b = ph.add(bar(10, 5, 30, 4, 2, 4));
+  b.v = [25, 0, 0];
+  for (let i = 0; i < 240; i++) ph.step();
+  assert.ok(b.pos[0] - 12 < 30, `проехал ${b.pos[0] - 12}`);
+  assert.ok(b.sleeping, 'остановился');
+});
+
 test('свободное падение по закону g: за 0,5 с - около g t² / 2', () => {
   const ph = new Physics(flat());
   const b = ph.add(bar(10, 50, 10, 2, 2, 2));

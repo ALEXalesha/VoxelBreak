@@ -40,6 +40,29 @@ test('чанки на границах совпадают: мир одинако
   }
 });
 
+test('постройки через швы чанков целы: каждый воксель дома на своём месте в мире', () => {
+  const { plan, world } = smallWorld({ seed: 9, kind: 'town', sx: 6, sy: 2, sz: 6 });
+  const houses = plan.structures.filter((s) => s.id === 'house');
+  const crossing = houses.filter((s) => (s.x >> 5) !== ((s.x1 - 1) >> 5) || (s.z >> 5) !== ((s.z1 - 1) >> 5));
+  assert.ok(crossing.length > 0, 'есть дома на швах');
+  for (const s of crossing) {
+    const others = plan.structures.filter((o) => o !== s && o.x < s.x1 && o.x1 > s.x && o.z < s.z1 && o.z1 > s.z);
+    let checked = 0;
+    for (let y = 0; y < s.model.sy; y++)
+      for (let lz = 0; lz < s.model.sz; lz++)
+        for (let lx = 0; lx < s.model.sx; lx++) {
+          const v = s.model.get(lx, y, lz);
+          if (!v || v === 255) continue;
+          const [ox, oz] = rotXZ(lx, lz, s.model.sx, s.model.sz, s.rot);
+          const wx = s.x + ox, wz = s.z + oz, wy = s.y + y;
+          if (others.some((o) => wx >= o.x && wx < o.x1 && wz >= o.z && wz < o.z1 && wy >= o.y && wy < o.y1)) continue;
+          assert.equal(world.get(wx, wy, wz), v, `дом ${s.x},${s.z}: воксель ${wx},${wy},${wz}`);
+          checked++;
+        }
+    assert.ok(checked > 1000);
+  }
+});
+
 test('после генерации ничего не висит в воздухе: каждый воксель связан с коренной породой', () => {
   for (const kind of KINDS) {
     for (const seed of [1, 2]) {
