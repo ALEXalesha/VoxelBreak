@@ -4,7 +4,7 @@ export const TOOLS = [
   { id: 'hammer', key: 'Digit1', range: 12, radius: 1.7, power: 5.5, cooldown: 0.32, push: 30 },
   { id: 'hands', key: 'Digit2', range: 14, push: 55, grabMass: 3000, cooldown: 0.25 },
   { id: 'dynamite', key: 'Digit3', range: 16, radius: 6.5, power: 14, fuse: 3, cooldown: 0.5, max: 12, ammo: 20 },
-  { id: 'shotgun', key: 'Digit4', range: 90, pellets: 9, spread: 0.06, radius: 1.0, power: 4.6, cooldown: 0.85, push: 14, ammo: 40 },
+  { id: 'shotgun', key: 'Digit4', range: 90, pellets: 9, spread: 0.11, radius: 1.0, power: 4.6, cooldown: 0.85, push: 14, ammo: 40 },
   { id: 'rocket', key: 'Digit5', speed: 90, radius: 5.5, power: 13, cooldown: 1.1, ammo: 12 },
   { id: 'laser', key: 'Digit6', range: 220, radius: 0.85, power: 10, cooldown: 0, rate: 30 },
   { id: 'vehicle', key: 'Digit7', cooldown: 1 },

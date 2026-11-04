@@ -1,0 +1,7 @@
+{
+  "all": true,
+  "include": ["web/js/core/**", "web/js/game/**", "web/assets/**"],
+  "exclude": ["web/js/app/**", "web/vendor/**"],
+  "reporter": ["text-summary", "json-summary"],
+  "report-dir": "coverage"
+}

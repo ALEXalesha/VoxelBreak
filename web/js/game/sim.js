@@ -169,8 +169,9 @@ export class Sim {
       if (hit.kind === 'body' && this.physics.bodies.includes(hit.body)) this.physics.applyImpulse(hit.body, hit.point, dir.map((c) => c * Math.min(hit.body.mass, 600) * t.push * 0.1));
     } else if (t.id === 'shotgun') {
       this.emit({ type: 'shot', x: eye[0], y: eye[1], z: eye[2] });
-      for (const d of pelletDirs(dir, t.pellets, t.spread, Math.floor(this.time * 60))) {
-        const hit = this.rayHit(eye, d, t.range);
+      // все дробины летят разом: сначала попадания, потом разрушение
+      const hits = pelletDirs(dir, t.pellets, t.spread, Math.floor(this.time * 60)).map((d) => [d, this.rayHit(eye, d, t.range)]);
+      for (const [d, hit] of hits) {
         if (!hit) continue;
         const n = hit.normal;
         this.destruction.sphere(hit.point[0] - n[0] * 0.5, hit.point[1] - n[1] * 0.5, hit.point[2] - n[2] * 0.5, t.radius, t.power);

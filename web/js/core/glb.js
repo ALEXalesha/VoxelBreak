@@ -107,7 +107,7 @@ export function voxelize(tris, { voxel = 0.25, solid = false, scale = 1 } = {}) 
   for (const t of tris) {
     const p = t.p.map((v, i) => v - lo[i % 3]);
     const mat = (byName(t.name) && !byName(t.name).anchor && t.name !== 'air' ? byName(t.name).id : 0) || nearestMaterial(...t.color);
-    const b0 = [0, 1, 2].map((a) => Math.max(0, Math.floor(Math.min(p[a], p[a + 3], p[a + 6]))));
+    const b0 = [0, 1, 2].map((a) => Math.min(size[a] - 1, Math.max(0, Math.floor(Math.min(p[a], p[a + 3], p[a + 6])))));
     const b1 = [0, 1, 2].map((a) => Math.min(size[a] - 1, Math.floor(Math.max(p[a], p[a + 3], p[a + 6]))));
     for (let y = b0[1]; y <= b1[1]; y++)
       for (let z = b0[2]; z <= b1[2]; z++)

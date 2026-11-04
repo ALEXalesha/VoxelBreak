@@ -68,7 +68,7 @@ export function stepPlayer(world, p, input, dt, bodies = []) {
   if (!collides(world, p, p.x, p.y + dy, p.z)) p.y += dy;
   else {
     if (dy < 0) { p.y = Math.floor(p.y + dy) + 1; if (collides(world, p)) p.y = Math.ceil(p.y); p.onGround = true; p.fallSpeed = -p.vy; }
-    else p.y = Math.ceil(p.y + dy + p.height) - p.height - 1e-4;
+    else p.y = Math.floor(p.y + dy + p.height) - p.height - 1e-4;
     p.vy = 0;
   }
   // по горизонтали с подъёмом на ступеньку
@@ -86,27 +86,34 @@ export function stepPlayer(world, p, input, dt, bodies = []) {
     }
     if (!stepped) { if (axis === 'x') p.vx = 0; else p.vz = 0; }
   }
-  // обломки: держат как пол, толкаются плечом
+  // обломки: невысокий кусок под ногами - ступенька, высокий - стена, которую толкают плечом
   const pushes = [];
+  const H = P.HALF * 0.85;
+  const FEET = [[0, 0], [-H, -H], [H, -H], [-H, H], [H, H]];
   for (const b of bodies) {
     const dxb = b.pos[0] - p.x, dzb = b.pos[2] - p.z, dyb = b.pos[1] - (p.y + p.height / 2);
     const r = b.radius + P.HALF + p.height / 2;
     if (dxb * dxb + dyb * dyb + dzb * dzb > r * r) continue;
     b.syncR();
-    let lift = 0;
-    for (const [ox, oz] of [[0, 0], [-P.HALF, -P.HALF], [P.HALF, -P.HALF], [-P.HALF, P.HALF], [P.HALF, P.HALF]]) {
-      for (let s = 0; s <= 2; s++) {
-        const g = b.toGrid([p.x + ox * 0.9, p.y + s * 0.5 + 0.01, p.z + oz * 0.9]);
-        if (b.at(Math.floor(g[0]), Math.floor(g[1]), Math.floor(g[2]))) lift = Math.max(lift, s * 0.5 + 0.5);
-      }
-    }
-    if (lift && p.vy <= 0.5) { p.y += Math.min(lift, 1.2); p.vy = 0; p.onGround = true; }
-    for (const hy of [p.height * 0.45, p.height * 0.8]) {
-      const g = b.toGrid([p.x, p.y + hy, p.z]);
-      if (!b.at(Math.floor(g[0]), Math.floor(g[1]), Math.floor(g[2]))) continue;
+    const inside = (x, y, z) => { const g = b.toGrid([x, y, z]); return b.at(Math.floor(g[0]), Math.floor(g[1]), Math.floor(g[2])) !== 0; };
+    const feetIn = (y) => FEET.some(([ox, oz]) => inside(p.x + ox, y, p.z + oz));
+    const tall = FEET.some(([ox, oz]) => inside(p.x + ox, p.y + P.STEP + 0.4, p.z + oz));
+    if (!tall && p.vy <= 0.5 && feetIn(p.y + 0.05)) {
+      // встать на верх куска: ближайшая свободная высота (деление пополам)
+      let lo = p.y, hi = p.y + P.STEP + 0.4;
+      for (let k = 0; k < 10; k++) { const mid = (lo + hi) / 2; if (feetIn(mid + 0.05)) lo = mid; else hi = mid; }
+      p.y = hi; p.vy = 0; p.onGround = true;
+    } else if (!tall && p.vy <= 0 && feetIn(p.y - 0.06)) { p.vy = 0; p.onGround = true; }
+    for (const hy of [p.height * 0.2, p.height * 0.5, p.height * 0.85]) {
+      if (!tall && hy < P.STEP + 0.4) continue;
+      const hit = FEET.slice(1).find(([ox, oz]) => inside(p.x + ox * 1.15, p.y + hy, p.z + oz * 1.15));
+      if (!hit) continue;
       const l = Math.hypot(dxb, dzb) || 1;
-      p.x -= dxb / l * 0.25; p.z -= dzb / l * 0.25;
-      pushes.push({ body: b, dir: [dxb / l, 0, dzb / l], at: [p.x, p.y + hy, p.z] });
+      p.x -= dxb / l * 0.3; p.z -= dzb / l * 0.3;
+      const dot = (p.vx * dxb + p.vz * dzb) / l;
+      if (dot > 0) { p.vx -= dxb / l * dot; p.vz -= dzb / l * dot; }
+      pushes.push({ body: b, dir: [dxb / l, 0, dzb / l], at: [p.x + dxb / l * P.HALF, p.y + hy, p.z + dzb / l * P.HALF] });
+      break;
     }
   }
   return pushes;

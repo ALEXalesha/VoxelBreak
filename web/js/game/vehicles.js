@@ -51,20 +51,31 @@ export function stepVehicle(sim, v, input, dt) {
   let ground = -Infinity;
   for (const [px, pz] of pts) ground = Math.max(ground, groundAt(world, px, v.y, pz, 2.2));
   // таран: что впереди выше ступеньки
-  const hit = frontVoxels(world, v, S, nx, nz, Math.max(ground, v.y));
+  const base = Math.max(ground, v.y);
+  const hit = frontVoxels(world, v, S, nx, nz, base);
   v.hitT = Math.max(0, v.hitT - dt);
   if (hit.length && Math.abs(v.speed) > 0.5) {
     const speedK = Math.min(1, Math.abs(v.speed) / S.maxV);
     const power = S.blade ? S.power * (0.6 + 0.4 * speedK) : S.power * speedK;
-    let cx = 0, cy = 0, cz = 0;
-    for (const [x, y, z] of hit) { cx += x + 0.5; cy += y + 0.5; cz += z + 0.5; }
-    cx /= hit.length; cy /= hit.length; cz /= hit.length;
     if (v.hitT <= 0) {
-      const rep = sim.destruction.sphere(cx, cy, cz, S.wid * 0.45, power, { impulse: Math.abs(v.speed) * 0.6 });
-      sim.emit({ type: 'ram', x: cx, y: cy, z: cz, speed: Math.abs(v.speed), vehicle: v.type, removed: rep.removedWorld });
+      // удар по всей ширине: свой шар на каждую полосу перед машиной
+      const bins = new Map();
+      for (const [x, y, z] of hit) {
+        const lat = Math.floor(((x + 0.5 - nx) * side[0] + (z + 0.5 - nz) * side[2] + S.wid / 2) / 3.5);
+        const key = lat * 64 + Math.floor((y - base) / 3.5);
+        const g = bins.get(key) || { x: 0, y: 0, z: 0, n: 0 };
+        g.x += x + 0.5; g.y += y + 0.5; g.z += z + 0.5; g.n++;
+        bins.set(key, g);
+      }
+      let removed = 0, cx = 0, cy = 0, cz = 0;
+      for (const g of [...bins.keys()].sort((a, b) => a - b).map((k) => bins.get(k))) {
+        cx = g.x / g.n; cy = g.y / g.n; cz = g.z / g.n;
+        removed += sim.destruction.sphere(cx, cy, cz, 3.0, power, { impulse: Math.abs(v.speed) * 0.6 }).removedWorld;
+      }
+      sim.emit({ type: 'ram', x: cx, y: cy, z: cz, speed: Math.abs(v.speed), vehicle: v.type, removed });
       v.hitT = S.blade ? 0.12 : 0.08;
     }
-    const still = frontVoxels(world, v, S, nx, nz, Math.max(ground, v.y));
+    const still = frontVoxels(world, v, S, nx, nz, base);
     if (still.length) { v.speed = S.blade ? v.speed * 0.5 : -v.speed * 0.25; return; }
     v.speed *= S.blade ? 0.85 : 0.7;
   }
