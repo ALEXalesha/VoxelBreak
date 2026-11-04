@@ -17,6 +17,9 @@ export class Body {
     this.w = [0, 0, 0];
     this.sleeping = false;
     this.sleepT = 0;
+    this.restT = 0;            // для сна «стоит на месте»: сколько прошло с отметки и где была отметка
+    this.restPos = [0, 0, 0];
+    this.restQ = [0, 0, 0, 1];
     this.version = 0;
     this.R = qmat(this.q);
     this.recompute();

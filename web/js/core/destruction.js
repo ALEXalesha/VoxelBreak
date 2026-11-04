@@ -57,7 +57,9 @@ export class Destruction {
       }
       report.bodies.push(...this.splitBody(b));
     }
-    report.bodies.push(...this.detach(removed, impulse > 0 ? { x, y, z, r, impulse } : null));
+    const blast = impulse > 0 ? { x, y, z, r, impulse } : null;
+    if (blast) report.bodies.push(...this.fragments(x, y, z, r, power, seed, blast, removed));
+    report.bodies.push(...this.detach(removed, blast));
     if (impulse > 0) this.blastBodies(x, y, z, r, impulse);
     for (const e of report.explosive) this.pending.push({ ...e, t: 0.12 });
     report.dust = this.enforceBudget();
@@ -78,6 +80,47 @@ export class Destruction {
     this.pending = this.pending.filter((p) => p.t > 0);
     for (const p of due) this.explode(p.x, p.y, p.z, p.r, p.power);
     return due.length;
+  }
+
+  // скорлупа взрыва: слабое на краю воронки откалывается кусками по 2-3 вокселя и разлетается.
+  // Отколотое уходит из мира в тела (счёт массы не меняется), соседи потом проверяются на опору.
+  fragments(cx, cy, cz, r, power, seed, blast, removed) {
+    const world = this.world;
+    const R = r * 1.45, cell = 3;
+    const groups = new Map();
+    for (let y = Math.max(0, Math.floor(cy - R)); y <= Math.ceil(cy + R); y++)
+      for (let z = Math.floor(cz - R); z <= Math.ceil(cz + R); z++)
+        for (let x = Math.floor(cx - R); x <= Math.ceil(cx + R); x++) {
+          const m = world.get(x, y, z);
+          if (!m || !world.inside(x, y, z) || STRENGTH[m] > power * 0.45) continue;
+          const d = Math.hypot(x + 0.5 - cx, y + 0.5 - cy, z + 0.5 - cz);
+          if (d > R * (0.85 + 0.15 * hash01(seed, x, z, y))) continue;
+          const gx = Math.floor((x + (seed % 3)) / cell), gy = Math.floor(y / cell), gz = Math.floor((z + (seed % 2)) / cell);
+          if (hash01(seed + 7, gx, gy, gz) > 0.6) continue;
+          const k = `${gx},${gy},${gz}`;
+          if (!groups.has(k)) groups.set(k, []);
+          groups.get(k).push([x, y, z, m]);
+        }
+    const out = [];
+    for (const k of [...groups.keys()].sort()) {
+      if (out.length >= MAX_NEW_BODIES) break;
+      const list = groups.get(k);
+      // кусок должен быть связным: каждая связная часть - своё тело
+      const body = bodyFromVoxels(0, list);
+      for (const comp of gridComponents(body.data, body.sx, body.sy, body.sz)) {
+        const part = comp.map((i) => {
+          const lx = i % body.sx, lz = Math.floor(i / body.sx) % body.sz, ly = Math.floor(i / (body.sx * body.sz));
+          return [body.origin[0] + lx, body.origin[1] + ly, body.origin[2] + lz, body.data[i]];
+        });
+        for (const [x, y, z] of part) { world.set(x, y, z, 0); removed.push([x, y, z, 0]); }
+        if (part.length < 2) { this.dust += part.length; continue; }
+        const b = bodyFromVoxels(0, part);
+        kick(b, blast);
+        this.physics.add(b);
+        out.push(b);
+      }
+    }
+    return out;
   }
 
   // висящие куски мира -> тела

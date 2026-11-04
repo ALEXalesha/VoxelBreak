@@ -74,6 +74,7 @@ export function serialize({ plan, world, physics, destruction, player = null, ti
   world.chunks.forEach((c, i) => { if (c && c.modified) chunks.push([i, toB64(rle(c.data))]); });
   const bodies = physics.bodies.map((b) => ({
     id: b.id, s: [b.sx, b.sy, b.sz], d: toB64(rle(b.data)), o: b.origin, p: b.pos, q: b.q, v: b.v, w: b.w, z: b.sleeping ? 1 : 0,
+    t: [b.sleepT, b.restT, ...b.restPos, ...b.restQ],
   }));
   return {
     tag: SAVE_TAG, v: SAVE_VERSION,
@@ -117,6 +118,8 @@ export function deserialize(obj, assets) {
     checkMaterials(data);
     const b = new Body(e.id, e.s[0], e.s[1], e.s[2], data, e.o);
     b.pos = e.p.slice(); b.q = e.q.slice(); b.v = e.v.slice(); b.w = e.w.slice(); b.sleeping = e.z === 1;
+    if (vec(e.t, 9)) { b.sleepT = e.t[0]; b.restT = e.t[1]; b.restPos = e.t.slice(2, 5); b.restQ = e.t.slice(5, 9); }
+    else { b.restPos = b.pos.slice(); b.restQ = b.q.slice(); }
     physics.add(b);
   }
   if (num(obj.nextId)) physics.nextId = Math.max(physics.nextId, obj.nextId);

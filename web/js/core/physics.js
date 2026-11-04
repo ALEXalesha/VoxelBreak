@@ -13,6 +13,9 @@ const MAX_V = 70, MAX_W = 25;
 const SLOP = 0.02;
 const FRICTION = 0.6, RESTITUTION = 0.15;
 const SLEEP_V2 = 0.3, SLEEP_W2 = 0.08, SLEEP_T = 0.6;
+const REST_T = 1, REST_MOVE = 0.3, REST_TURN = Math.cos(0.08 / 2);
+
+function sleep(b) { b.sleeping = true; b.v = [0, 0, 0]; b.w = [0, 0, 0]; b.sleepT = 0; }
 
 export class Physics {
   constructor(world) {
@@ -40,7 +43,7 @@ export class Physics {
   get(id) { return this.bodies.find((b) => b.id === id) || null; }
   awakeCount() { let n = 0; for (const b of this.bodies) if (!b.sleeping) n++; return n; }
 
-  wake(b) { b.sleeping = false; b.sleepT = 0; }
+  wake(b) { if (b.sleeping) { b.restT = 0; b.restPos = b.pos.slice(); b.restQ = b.q.slice(); } b.sleeping = false; b.sleepT = 0; }
   // разбудить всё, что касается ящика [x0, x1] (мировые координаты)
   wakeRegion(x0, y0, z0, x1, y1, z1) {
     for (const b of this.bodies) {
@@ -104,13 +107,21 @@ export class Physics {
       const dq = [wx * q[3] + wy * q[2] - wz * q[1], -wx * q[2] + wy * q[3] + wz * q[0], wx * q[1] - wy * q[0] + wz * q[3], -wx * q[0] - wy * q[1] - wz * q[2]];
       q[0] += 0.5 * h * dq[0]; q[1] += 0.5 * h * dq[1]; q[2] += 0.5 * h * dq[2]; q[3] += 0.5 * h * dq[3];
       qnorm(q);
-      if (b.touching) { b.w[0] *= 0.985; b.w[1] *= 0.985; b.w[2] *= 0.985; }
+      if (b.touching) { b.w[0] *= 0.985; b.w[1] *= 0.985; b.w[2] *= 0.985; b.restTouch = true; }
       b.touching = false;
       const v2 = dot(b.v, b.v), w2 = dot(b.w, b.w);
       if (v2 < SLEEP_V2 && w2 < SLEEP_W2) {
         b.sleepT += h;
-        if (b.sleepT > SLEEP_T) { b.sleeping = true; b.v = [0, 0, 0]; b.w = [0, 0, 0]; }
+        if (b.sleepT > SLEEP_T) sleep(b);
       } else b.sleepT = 0;
+      // качается на месте: за секунду почти не сдвинулся - тоже спать (бюджет кадра)
+      b.restT += h;
+      if (b.restT >= REST_T) {
+        const moved = Math.hypot(b.pos[0] - b.restPos[0], b.pos[1] - b.restPos[1], b.pos[2] - b.restPos[2]);
+        const turned = Math.abs(b.q[0] * b.restQ[0] + b.q[1] * b.restQ[1] + b.q[2] * b.restQ[2] + b.q[3] * b.restQ[3]);
+        if (moved < REST_MOVE && turned > REST_TURN && b.restTouch) sleep(b);
+        b.restT = 0; b.restTouch = false; b.restPos = b.pos.slice(); b.restQ = b.q.slice();
+      }
     }
     for (const b of this.toWake) this.wake(b);
     this.toWake.length = 0;
@@ -235,85 +246,108 @@ export function sphereVsCubes(x, y, z, get) {
 }
 
 function contact(a, b, c, wx, wy, wz) {
-  const n = [c[0], c[1], c[2]];
-  const px = wx - n[0] * 0.5, py = wy - n[1] * 0.5, pz = wz - n[2] * 0.5;
+  const nx = c[0], ny = c[1], nz = c[2];
+  const px = wx - nx * 0.5, py = wy - ny * 0.5, pz = wz - nz * 0.5;
   return {
-    a, b, n, depth: c[3],
+    a, b, n: [nx, ny, nz], depth: c[3],
     ra: [px - a.pos[0], py - a.pos[1], pz - a.pos[2]],
     rb: b ? [px - b.pos[0], py - b.pos[1], pz - b.pos[2]] : null,
-    jn: 0, jt1: 0, jt2: 0,
+    jn: 0, jt1: 0, jt2: 0, kn: 0, k1: 0, k2: 0, target: 0, da: false, db: false, J: null,
   };
 }
 
-const dynA = (c) => !c.a.sleeping;
-const dynB = (c) => c.b && !c.b.sleeping;
-
-function velAt(c) {
-  const a = c.a, ra = c.ra;
-  let vx = a.v[0] + a.w[1] * ra[2] - a.w[2] * ra[1];
-  let vy = a.v[1] + a.w[2] * ra[0] - a.w[0] * ra[2];
-  let vz = a.v[2] + a.w[0] * ra[1] - a.w[1] * ra[0];
-  if (c.b) {
-    const b = c.b, rb = c.rb;
-    vx -= b.v[0] + b.w[1] * rb[2] - b.w[2] * rb[1];
-    vy -= b.v[1] + b.w[2] * rb[0] - b.w[0] * rb[2];
-    vz -= b.v[2] + b.w[0] * rb[1] - b.w[1] * rb[0];
-  }
-  return [vx, vy, vz];
-}
-
-function kFor(c, d) {
-  let k = 0;
-  if (dynA(c)) { const t = mulMV(c.a.invIw, cross(c.ra, d)); k += c.a.invMass + dot(d, cross(t, c.ra)); }
-  if (dynB(c)) { const t = mulMV(c.b.invIw, cross(c.rb, d)); k += c.b.invMass + dot(d, cross(t, c.rb)); }
-  return k;
-}
+// J: для каждого направления (n, t1, t2) по 13 чисел:
+// d (3), ra×d (3), Ia·(ra×d) (3), rb×d... заменено на (3+3) только при теле b - см. ниже
+const STRIDE = 15;   // d(3) raXd(3) IraXd(3) rbXd(3) IrbXd(3)
 
 function prepare(c) {
   const n = c.n;
-  const t1 = Math.abs(n[0]) < 0.6 ? cross(n, [1, 0, 0]) : cross(n, [0, 1, 0]);
-  const l = Math.hypot(t1[0], t1[1], t1[2]);
-  t1[0] /= l; t1[1] /= l; t1[2] /= l;
-  c.t1 = t1; c.t2 = cross(n, t1);
-  c.kn = kFor(c, n); c.k1 = kFor(c, c.t1); c.k2 = kFor(c, c.t2);
-  const vn = dot(velAt(c), n);
+  let t1x, t1y, t1z;
+  if (Math.abs(n[0]) < 0.6) { t1x = 0; t1y = n[2]; t1z = -n[1]; } else { t1x = -n[2]; t1y = 0; t1z = n[0]; }
+  const l = Math.hypot(t1x, t1y, t1z);
+  t1x /= l; t1y /= l; t1z /= l;
+  const t2x = n[1] * t1z - n[2] * t1y, t2y = n[2] * t1x - n[0] * t1z, t2z = n[0] * t1y - n[1] * t1x;
+  const a = c.a, b = c.b;
+  c.da = !a.sleeping;
+  c.db = !!b && !b.sleeping;
+  const J = c.J = new Float64Array(STRIDE * 3);
+  const dirs = [n[0], n[1], n[2], t1x, t1y, t1z, t2x, t2y, t2z];
+  const ra = c.ra, rb = c.rb, Ia = a.invIw, Ib = c.db ? b.invIw : null;
+  const ks = [0, 0, 0];
+  for (let k = 0; k < 3; k++) {
+    const o = k * STRIDE;
+    const dx = dirs[k * 3], dy = dirs[k * 3 + 1], dz = dirs[k * 3 + 2];
+    J[o] = dx; J[o + 1] = dy; J[o + 2] = dz;
+    let kk = 0;
+    if (c.da) {
+      const cx = ra[1] * dz - ra[2] * dy, cy = ra[2] * dx - ra[0] * dz, cz = ra[0] * dy - ra[1] * dx;
+      J[o + 3] = cx; J[o + 4] = cy; J[o + 5] = cz;
+      J[o + 6] = Ia[0] * cx + Ia[1] * cy + Ia[2] * cz; J[o + 7] = Ia[3] * cx + Ia[4] * cy + Ia[5] * cz; J[o + 8] = Ia[6] * cx + Ia[7] * cy + Ia[8] * cz;
+      kk += a.invMass + cx * J[o + 6] + cy * J[o + 7] + cz * J[o + 8];
+    }
+    if (b) {
+      const cx = rb[1] * dz - rb[2] * dy, cy = rb[2] * dx - rb[0] * dz, cz = rb[0] * dy - rb[1] * dx;
+      J[o + 9] = cx; J[o + 10] = cy; J[o + 11] = cz;
+      if (c.db) {
+        J[o + 12] = Ib[0] * cx + Ib[1] * cy + Ib[2] * cz; J[o + 13] = Ib[3] * cx + Ib[4] * cy + Ib[5] * cz; J[o + 14] = Ib[6] * cx + Ib[7] * cy + Ib[8] * cz;
+        kk += b.invMass + cx * J[o + 12] + cy * J[o + 13] + cz * J[o + 14];
+      }
+    }
+    ks[k] = kk;
+  }
+  c.kn = ks[0]; c.k1 = ks[1]; c.k2 = ks[2];
+  c.t1 = [t1x, t1y, t1z]; c.t2 = [t2x, t2y, t2z];
+  const vn = relVel(c, 0);
   c.target = vn < -3 ? -RESTITUTION * vn : 0;
 }
 
-function apply(c, d, j) {
-  const P = [d[0] * j, d[1] * j, d[2] * j];
-  if (dynA(c)) {
-    const a = c.a;
-    a.v[0] += P[0] * a.invMass; a.v[1] += P[1] * a.invMass; a.v[2] += P[2] * a.invMass;
-    const dw = mulMV(a.invIw, cross(c.ra, P));
-    a.w[0] += dw[0]; a.w[1] += dw[1]; a.w[2] += dw[2];
-  }
-  if (dynB(c)) {
+// относительная скорость точки касания вдоль направления k (0 - нормаль, 1, 2 - касательные)
+function relVel(c, k) {
+  const J = c.J, o = k * STRIDE, a = c.a;
+  let v = a.v[0] * J[o] + a.v[1] * J[o + 1] + a.v[2] * J[o + 2];
+  if (c.da) v += a.w[0] * J[o + 3] + a.w[1] * J[o + 4] + a.w[2] * J[o + 5];
+  if (c.b) {
     const b = c.b;
-    b.v[0] -= P[0] * b.invMass; b.v[1] -= P[1] * b.invMass; b.v[2] -= P[2] * b.invMass;
-    const dw = mulMV(b.invIw, cross(c.rb, P));
-    b.w[0] -= dw[0]; b.w[1] -= dw[1]; b.w[2] -= dw[2];
+    v -= b.v[0] * J[o] + b.v[1] * J[o + 1] + b.v[2] * J[o + 2] + b.w[0] * J[o + 9] + b.w[1] * J[o + 10] + b.w[2] * J[o + 11];
+  }
+  return v;
+}
+
+function impulse(c, k, j) {
+  const J = c.J, o = k * STRIDE;
+  if (c.da) {
+    const a = c.a, m = a.invMass * j;
+    a.v[0] += J[o] * m; a.v[1] += J[o + 1] * m; a.v[2] += J[o + 2] * m;
+    a.w[0] += J[o + 6] * j; a.w[1] += J[o + 7] * j; a.w[2] += J[o + 8] * j;
+  }
+  if (c.db) {
+    const b = c.b, m = b.invMass * j;
+    b.v[0] -= J[o] * m; b.v[1] -= J[o + 1] * m; b.v[2] -= J[o + 2] * m;
+    b.w[0] -= J[o + 12] * j; b.w[1] -= J[o + 13] * j; b.w[2] -= J[o + 14] * j;
   }
 }
 
 function solve(c) {
   if (c.kn <= 0) return;
-  const v = velAt(c);
-  const vn = dot(v, c.n);
-  let j = (c.target - vn) / c.kn;
+  let j = (c.target - relVel(c, 0)) / c.kn;
   const old = c.jn;
-  c.jn = Math.max(0, old + j);
+  c.jn = old + j > 0 ? old + j : 0;
   j = c.jn - old;
-  if (j) apply(c, c.n, j);
+  if (j) impulse(c, 0, j);
   const lim = FRICTION * c.jn;
-  for (const [t, key, k] of [[c.t1, 'jt1', c.k1], [c.t2, 'jt2', c.k2]]) {
-    if (k <= 0) continue;
-    const vt = dot(velAt(c), t);
-    let jt = -vt / k;
-    const o = c[key];
-    c[key] = Math.max(-lim, Math.min(lim, o + jt));
-    jt = c[key] - o;
-    if (jt) apply(c, t, jt);
+  if (c.k1 > 0) {
+    const o1 = c.jt1;
+    let v = o1 - relVel(c, 1) / c.k1;
+    v = v < -lim ? -lim : v > lim ? lim : v;
+    c.jt1 = v;
+    if (v !== o1) impulse(c, 1, v - o1);
+  }
+  if (c.k2 > 0) {
+    const o2 = c.jt2;
+    let v = o2 - relVel(c, 2) / c.k2;
+    v = v < -lim ? -lim : v > lim ? lim : v;
+    c.jt2 = v;
+    if (v !== o2) impulse(c, 2, v - o2);
   }
 }
 
