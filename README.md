@@ -5,17 +5,13 @@ piece, and the debris falls by physics. In the spirit of the game Teardown, but 
 
 [Русская версия](README.ru.md)
 
-[![Status](https://img.shields.io/badge/status-planned-lightgrey)](#) [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE) [![Built with Claude Code](https://img.shields.io/badge/Built_with-Claude_Code-D97757?logo=claude&logoColor=white)](https://claude.com/claude-code)
+[![Status](https://img.shields.io/badge/status-planned-lightgrey)](#) [![License](https://img.shields.io/badge/license-All_rights_reserved-lightgrey)](LICENSE) [![Built with Claude Code](https://img.shields.io/badge/Built_with-Claude_Code-D97757?logo=claude&logoColor=white)](https://claude.com/claude-code)
 
 Code, tests and docs are written by Claude (Anthropic) in Claude Code. Ideas, testing and decisions - Alexey.
 
 ## Status
 
-There is no code yet. The repository holds the design note
-([docs/superpowers/specs/2026-10-17-voxelbreak-design.md](docs/superpowers/specs/2026-10-17-voxelbreak-design.md), in Russian),
-which waits for Alexey's go-ahead. VoxelBreak is the working name; the repository is still called TearDown and will be
-renamed together with the start of the work. This is a different project from
-[TeardownMods](https://github.com/ALEXalesha/TeardownMods), the mods for the real game.
+In development, nothing to download yet. This repository is a showcase: the source code is closed.
 
 ## What it will do
 
@@ -41,4 +37,4 @@ Not planned for now: story, missions, enemies, multiplayer.
 
 ## License
 
-MIT
+Closed source. All rights reserved, see [LICENSE](LICENSE).
