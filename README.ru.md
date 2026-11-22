@@ -5,13 +5,16 @@
 
 [English](README.md)
 
-[![Status](https://img.shields.io/badge/status-planned-lightgrey)](#) [![License](https://img.shields.io/badge/license-All_rights_reserved-lightgrey)](LICENSE) [![Built with Claude Code](https://img.shields.io/badge/Built_with-Claude_Code-D97757?logo=claude&logoColor=white)](https://claude.com/claude-code)
+[![Status](https://img.shields.io/badge/status-planned-lightgrey)](#) [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE) [![Built with Claude Code](https://img.shields.io/badge/Built_with-Claude_Code-D97757?logo=claude&logoColor=white)](https://claude.com/claude-code)
 
 Код, тесты и документация этого проекта написаны Claude (Anthropic) в Claude Code. Идеи, проверка и решения - Алексей.
 
 ## Состояние
 
-В разработке, скачивать пока нечего. Здесь витрина: исходный код закрыт.
+Кода пока нет. В репозитории лежит описание замысла
+([docs/superpowers/specs/2026-10-17-voxelbreak-design.md](docs/superpowers/specs/2026-10-17-voxelbreak-design.md)),
+оно ждёт «да» Алексея. VoxelBreak - рабочее имя; репозиторий пока называется TearDown и будет переименован, когда начнётся
+работа. Это другой проект, не [TeardownMods](https://github.com/ALEXalesha/TeardownMods) (моды для настоящей игры).
 
 ## Что будет
 
@@ -36,4 +39,4 @@
 
 ## Лицензия
 
-Исходный код закрыт. Все права защищены, см. [LICENSE](LICENSE).
+MIT
